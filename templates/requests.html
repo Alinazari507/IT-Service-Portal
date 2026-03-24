@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
+    <meta charset="UTF-8">
     <title>Meine Anfragen</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -11,6 +12,7 @@
             <thead>
                 <tr>
                     <th>Service-ID</th>
+                    <th>Grund (Reason)</th>
                     <th>Status</th>
                     <th>Erstellt am</th>
                 </tr>
@@ -18,19 +20,26 @@
             <tbody>
                 {% for req in requests %}
                 <tr>
-                    <td>{{ req.service_id }}</td>
-                    <td>{{ req.status }}</td>
+                    <td><strong>{{ req.service_id }}</strong></td>
+                    <td>{{ req.reason }}</td>
+                    <td>
+                        <span class="status-{{ req.status.lower() }}">
+                            {{ req.status }}
+                        </span>
+                    </td>
                     <td>{{ req.created_at }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="3">Keine Anfragen vorhanden.</td>
+                    <td colspan="4">Keine Anfragen vorhanden.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        <div class="admin-link">
-            <a href="{{ url_for('index') }}">← Zurück zum Katalog</a>
+        <div class="admin-link" style="margin-top: 20px;">
+            <a href="{{ url_for('index') }}" class="btn-secondary" style="text-decoration: none; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                ← Zurück zum Katalog
+            </a>
         </div>
     </div>
 </body>

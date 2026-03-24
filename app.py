@@ -6,19 +6,20 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 import database
 from models import User
 
-# Load environment variables (for local development)
+# Laden der Umgebungsvariablen aus der .env Datei
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'fallback-dev-key')
 
-# Setup Flask-Login
+# Konfiguration von Flask-Login für die Sitzungsverwaltung
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
+    """Lädt den Benutzer aus der Datenbank anhand der ID."""
     conn = sqlite3.connect(database.DB_PATH)
     c = conn.cursor()
     c.execute("SELECT id, username, role, fullname, department FROM users WHERE id=?", (user_id,))
@@ -28,11 +29,12 @@ def load_user(user_id):
         return User(row[0], row[1], row[2], row[3], row[4])
     return None
 
-# Initialize database (creates tables if needed)
+# Initialisierung der Datenbanktabellen beim Start
 database.init_db()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Verarbeitet die Anmeldung der Benutzer."""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -43,18 +45,20 @@ def login():
             login_user(user)
             return redirect(url_for('index'))
         else:
-            flash('Invalid username or password')
+            flash('Ungültiger Benutzername oder Passwort')
     return render_template('login.html')
 
 @app.route('/logout')
 @login_required
 def logout():
+    """Loggt den aktuellen Benutzer aus."""
     logout_user()
     return redirect(url_for('login'))
 
 @app.route('/')
 @login_required
 def index():
+    """Startseite mit Anzeige des Service-Katalogs."""
     category = request.args.get('category')
     services = database.get_services(category)
     return render_template('index.html', user=current_user, services=services)
@@ -62,27 +66,57 @@ def index():
 @app.route('/request/<service_id>')
 @login_required
 def show_request_form(service_id):
+    """Zeigt das Formular für eine neue Service-Anfrage an."""
     return render_template('service_request.html', service_id=service_id, user=current_user)
 
 @app.route('/request', methods=['POST'])
 @login_required
 def request_service():
+    """Speichert die vom Benutzer gesendete Service-Anfrage."""
     service_id = request.form['service_id']
-    database.add_request(service_id, current_user.fullname, current_user.department)
+    reason = request.form.get('reason', '')
+    
+    # Speichern der Anfrage in der Datenbank
+    database.add_request(service_id, current_user.fullname, current_user.department, reason)
+    
     return redirect(url_for('requests_list'))
 
 @app.route('/requests')
 @login_required
 def requests_list():
+    """Zeigt dem Benutzer seine eigenen gestellten Anfragen."""
     reqs = database.get_requests(user_name=current_user.fullname)
     return render_template('requests.html', requests=reqs)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """Registrierung neuer Benutzer. 'admin' wird automatisch Admin-Rolle zugewiesen."""
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        fullname = request.form['fullname']
+        department = request.form['department']
+        
+        if database.get_user(username):
+            flash('Benutzername existiert bereits.')
+            return redirect(url_for('register'))
+        
+        # Automatische Zuweisung der Admin-Rolle für den Benutzernamen 'admin'
+        role = 'admin' if username.lower() == 'admin' else 'user'
+        
+        database.add_user(username, password, role, fullname, department)
+        flash('Registrierung erfolgreich. Bitte loggen Sie sich ein.')
+        return redirect(url_for('login'))
+    return render_template('register.html')
 
 @app.route('/admin/add', methods=['GET', 'POST'])
 @login_required
 def add_service_form():
+    """Ermöglicht Administratoren das Hinzufügen neuer Services."""
     if current_user.role != 'admin':
-        flash('Access denied. Admin only.')
+        flash('Zugriff verweigert. Nur für Administratoren.')
         return redirect(url_for('index'))
+    
     if request.method == 'POST':
         service = {
             'id': request.form['id'],
@@ -101,35 +135,22 @@ def add_service_form():
 @app.route('/admin')
 @login_required
 def admin_panel():
+    """Übersicht aller Anfragen für Administratoren."""
     if current_user.role != 'admin':
-        return "Access denied", 403
-    requests = database.get_all_requests()
-    return render_template('admin.html', requests=requests)
+        return "Zugriff verweigert", 403
+    requests_all = database.get_all_requests()
+    return render_template('admin.html', requests=requests_all)
 
 @app.route('/admin/update/<int:request_id>', methods=['POST'])
 @login_required
 def admin_update_request(request_id):
+    """Aktualisiert den Status einer Anfrage durch den Administrator."""
     if current_user.role != 'admin':
-        return "Access denied", 403
+        return "Zugriff verweigert", 403
     new_status = request.form['status']
     database.update_request_status(request_id, new_status)
     return redirect(url_for('admin_panel'))
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        fullname = request.form['fullname']
-        department = request.form['department']
-        # بررسی وجود کاربر
-        if database.get_user(username):
-            flash('Benutzername existiert bereits.')
-            return redirect(url_for('register'))
-        # ایجاد کاربر جدید (نقش پیش‌فرض 'user')
-        database.add_user(username, password, 'user', fullname, department)
-        flash('Benutzer erfolgreich angelegt. Bitte einloggen.')
-        return redirect(url_for('login'))
-    return render_template('register.html')
 
 if __name__ == '__main__':
+    # Startet die Anwendung im Debug-Modus
     app.run(debug=True)
