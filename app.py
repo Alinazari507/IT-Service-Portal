@@ -1,11 +1,16 @@
+import os
 import sqlite3
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import database
 from models import User
 
+# Load environment variables (for local development)
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-in-production'  # TODO: use env var
+app.secret_key = os.getenv('SECRET_KEY', 'fallback-dev-key')
 
 # Setup Flask-Login
 login_manager = LoginManager()
