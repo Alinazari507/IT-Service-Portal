@@ -8,7 +8,7 @@ if not os.path.exists('data'):
 DB_PATH = 'data/catalog.db'
 
 def init_db():
-    """Initialisiert die Datenbanktabellen."""
+    """Initialisiert die Datenbanktabellen und Startdaten."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
@@ -27,7 +27,7 @@ def init_db():
         )
     ''')
 
-    # Tabelle für Service-Anfragen inkl. Spalte 'reason'
+    # Tabelle für Service-Anfragen
     c.execute('''
         CREATE TABLE IF NOT EXISTS requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,19 +53,50 @@ def init_db():
         )
     ''')
     
-    # --- بخش اضافه شده برای ادمین همیشگی ---
-    # این کد چک می‌کند اگر یوزر ادمین وجود ندارد، آن را بسازد
+    # ادمین پیش‌فرض
     c.execute("SELECT * FROM users WHERE username = 'admin'")
     if not c.fetchone():
-        # پسورد مورد نظر شما به سبک امن
         secure_password = "Kein-Zugriff-fur-User-2026!"
         c.execute('''
             INSERT INTO users (username, password, role, fullname, department)
             VALUES (?, ?, ?, ?, ?)
         ''', ('admin', secure_password, 'admin', 'System Administrator', 'IT Management'))
-    # ---------------------------------------
 
     conn.commit()
+    conn.close()
+    
+    # پر کردن خودکار سرویس‌ها در صورت خالی بودن
+    seed_data()
+
+def seed_data():
+    """Füllt die Datenbank mit Standard-Services, falls keine vorhanden sind."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    c.execute("SELECT COUNT(*) FROM services")
+    if c.fetchone()[0] == 0:
+        services = [
+            ('HW-001', 'Lenovo ThinkPad X1', 'Hardware', 'Sofort verfügbar', 
+             'Premium Business Notebook für mobiles Arbeiten.', 
+             'Intel i7, 16GB RAM, 512GB SSD, Windows 11 Pro.', '3 Werktage', '0€ (Standard)'),
+            
+            ('SW-002', 'Microsoft 365 Business', 'Software', '24h Aktivierung', 
+             'Vollständiges Office-Paket für produktives Arbeiten.', 
+             'Enthält Word, Excel, Teams und Outlook.', '1 Werktag', '12,50€ / Monat'),
+            
+            ('ACC-003', 'VPN-Fernzugriff', 'Zugang', 'Sofort', 
+             'Sicherer Zugriff auf das Firmennetzwerk von Zuhause.', 
+             'Cisco AnyConnect mit Multi-Faktor-Authentifizierung.', '1 Stunde', '0€'),
+            
+            ('SUP-004', 'IT-Support Ticket', 'Support', 'Mo-Fr 08:00-17:00', 
+             'Unterstützung bei technischen Problemen aller Art.', 
+             'Support über Jira Service Management System.', '4 Stunden', '0€')
+        ]
+        c.executemany('''
+            INSERT INTO services (id, name, category, availability, description_business, description_technical, sla, costs) 
+            VALUES (?,?,?,?,?,?,?,?)
+        ''', services)
+        conn.commit()
     conn.close()
 
 def get_services(category=None):
