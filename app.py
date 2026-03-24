@@ -6,20 +6,21 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 import database
 from models import User
 
-# Laden der Umgebungsvariablen aus der .env Datei
+# Lade Umgebungsvariablen
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'fallback-dev-key')
+# Sicherheitsschlüssel für Sessions
+app.secret_key = os.getenv('SECRET_KEY', 'mein-it-portal-geheimnis-2026')
 
-# Konfiguration von Flask-Login für die Sitzungsverwaltung
+# Flask-Login Initialisierung
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Lädt den Benutzer aus der Datenbank anhand der ID."""
+    """Lädt den Benutzer für die aktuelle Sitzung aus der Datenbank."""
     conn = sqlite3.connect(database.DB_PATH)
     c = conn.cursor()
     c.execute("SELECT id, username, role, fullname, department FROM users WHERE id=?", (user_id,))
@@ -29,16 +30,19 @@ def load_user(user_id):
         return User(row[0], row[1], row[2], row[3], row[4])
     return None
 
-# Initialisierung der Datenbanktabellen beim Start
+# Initialisiere Datenbankstruktur beim Start
 database.init_db()
+
+# --- Authentifizierung ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Verarbeitet die Anmeldung der Benutzer."""
+    """Benutzeranmeldung."""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         user_data = database.get_user(username)
+        
         if user_data and user_data['password'] == password:
             user = User(user_data['id'], user_data['username'], user_data['role'],
                         user_data['fullname'], user_data['department'])
@@ -48,49 +52,9 @@ def login():
             flash('Ungültiger Benutzername oder Passwort')
     return render_template('login.html')
 
-@app.route('/logout')
-@login_required
-def logout():
-    """Loggt den aktuellen Benutzer aus."""
-    logout_user()
-    return redirect(url_for('login'))
-
-@app.route('/')
-@login_required
-def index():
-    """Startseite mit Anzeige des Service-Katalogs."""
-    category = request.args.get('category')
-    services = database.get_services(category)
-    return render_template('index.html', user=current_user, services=services)
-
-@app.route('/request/<service_id>')
-@login_required
-def show_request_form(service_id):
-    """Zeigt das Formular für eine neue Service-Anfrage an."""
-    return render_template('service_request.html', service_id=service_id, user=current_user)
-
-@app.route('/request', methods=['POST'])
-@login_required
-def request_service():
-    """Speichert die vom Benutzer gesendete Service-Anfrage."""
-    service_id = request.form['service_id']
-    reason = request.form.get('reason', '')
-    
-    # Speichern der Anfrage in der Datenbank
-    database.add_request(service_id, current_user.fullname, current_user.department, reason)
-    
-    return redirect(url_for('requests_list'))
-
-@app.route('/requests')
-@login_required
-def requests_list():
-    """Zeigt dem Benutzer seine eigenen gestellten Anfragen."""
-    reqs = database.get_requests(user_name=current_user.fullname)
-    return render_template('requests.html', requests=reqs)
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    """Registrierung neuer Benutzer. 'admin' wird automatisch Admin-Rolle zugewiesen."""
+    """Benutzerregistrierung (Admin-Rolle wird bei Username 'admin' vergeben)."""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -101,7 +65,6 @@ def register():
             flash('Benutzername existiert bereits.')
             return redirect(url_for('register'))
         
-        # Automatische Zuweisung der Admin-Rolle für den Benutzernamen 'admin'
         role = 'admin' if username.lower() == 'admin' else 'user'
         
         database.add_user(username, password, role, fullname, department)
@@ -109,13 +72,68 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+@app.route('/logout')
+@login_required
+def logout():
+    """Beendet die aktuelle Sitzung."""
+    logout_user()
+    return redirect(url_for('login'))
+
+# --- Service Katalog (User) ---
+
+@app.route('/')
+@login_required
+def index():
+    """Startseite mit Service-Übersicht."""
+    category = request.args.get('category')
+    services = database.get_services(category)
+    return render_template('index.html', user=current_user, services=services)
+
+@app.route('/request/<service_id>')
+@login_required
+def show_request_form(service_id):
+    """Zeigt das Anfrageformular für einen bestimmten Service."""
+    all_s = database.get_services()
+    service = next((s for s in all_s if s['id'] == service_id), None)
+    return render_template('service_request.html', service=service, user=current_user)
+
+@app.route('/request', methods=['POST'])
+@login_required
+def request_service():
+    """Speichert eine neue Service-Anfrage in der Datenbank."""
+    service_id = request.form['service_id']
+    reason = request.form.get('reason', '')
+    
+    database.add_request(service_id, current_user.fullname, current_user.department, reason)
+    flash('Ihre Anfrage wurde erfolgreich gesendet.')
+    return redirect(url_for('requests_list'))
+
+@app.route('/requests')
+@login_required
+def requests_list():
+    """Anzeige der eigenen Anfragen des Benutzers."""
+    reqs = database.get_requests(user_name=current_user.fullname)
+    return render_template('requests.html', requests=reqs)
+
+# --- Administration (Admin) ---
+
+@app.route('/admin')
+@login_required
+def admin_panel():
+    """Panel für Administratoren zur Verwaltung aller Anfragen."""
+    if current_user.role != 'admin':
+        flash('Zugriff verweigert.')
+        return redirect(url_for('index'))
+    
+    requests_all = database.get_all_requests()
+    return render_template('admin.html', requests=requests_all)
+
 @app.route('/admin/add', methods=['GET', 'POST'])
 @login_required
 def add_service_form():
-    """Ermöglicht Administratoren das Hinzufügen neuer Services."""
+    """Erstellung neuer Services durch den Administrator."""
     if current_user.role != 'admin':
-        flash('Zugriff verweigert. Nur für Administratoren.')
-        return redirect(url_for('index'))
+        return "Zugriff verweigert", 403
     
     if request.method == 'POST':
         service = {
@@ -129,28 +147,21 @@ def add_service_form():
             'costs': request.form['costs']
         }
         database.add_service(service)
+        flash('Service erfolgreich hinzugefügt.')
         return redirect(url_for('index'))
     return render_template('add_service.html')
-
-@app.route('/admin')
-@login_required
-def admin_panel():
-    """Übersicht aller Anfragen für Administratoren."""
-    if current_user.role != 'admin':
-        return "Zugriff verweigert", 403
-    requests_all = database.get_all_requests()
-    return render_template('admin.html', requests=requests_all)
 
 @app.route('/admin/update/<int:request_id>', methods=['POST'])
 @login_required
 def admin_update_request(request_id):
-    """Aktualisiert den Status einer Anfrage durch den Administrator."""
+    """Status-Update einer Anfrage (Genehmigen/Ablehnen)."""
     if current_user.role != 'admin':
         return "Zugriff verweigert", 403
+    
     new_status = request.form['status']
     database.update_request_status(request_id, new_status)
+    flash(f'Anfrage #{request_id} wurde aktualisiert.')
     return redirect(url_for('admin_panel'))
 
 if __name__ == '__main__':
-    # Startet die Anwendung im Debug-Modus
     app.run(debug=True)

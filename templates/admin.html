@@ -1,47 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>Admin - Requests</title>
+    <meta charset="UTF-8">
+    <title>Admin-Panel | IT Service Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .status-pending { background: #ffc107; color: #856404; }
+        .status-approved { background: #28a745; color: white; }
+        .status-rejected { background: #dc3545; color: white; }
+        
+        .admin-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h2>Admin - Alle Anfragen</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Service</th>
-                    <th>User</th>
-                    <th>Status</th>
-                    <th>Erstellt am</th>
-                    <th>Aktion</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for req in requests %}
-                <tr>
-                    <td>{{ req.id }}</td>
-                    <td>{{ req.service_id }}</td>
-                    <td>{{ req.user_name }} ({{ req.user_dept }})</td>
-                    <td>{{ req.status }}</td>
-                    <td>{{ req.created_at }}</td>
-                    <td>
-                        <form method="post" action="{{ url_for('admin_update_request', request_id=req.id) }}">
-                            <select name="status">
-                                <option value="Pending" {% if req.status == 'Pending' %}selected{% endif %}>Pending</option>
-                                <option value="In Progress" {% if req.status == 'In Progress' %}selected{% endif %}>In Progress</option>
-                                <option value="Completed" {% if req.status == 'Completed' %}selected{% endif %}>Completed</option>
-                                <option value="Rejected" {% if req.status == 'Rejected' %}selected{% endif %}>Rejected</option>
-                            </select>
-                            <button type="submit">Update</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <a href="{{ url_for('index') }}">Zurück zum Katalog</a>
+        <header class="header">
+            <h1>🛠️ IT-Administration Panel</h1>
+            <small>Übersicht aller eingehenden Service-Anfragen</small>
+        </header>
+
+        <div class="admin-card">
+            <h3>Eingegangene Anfragen</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Benutzer</th>
+                        <th>Abteilung</th>
+                        <th>Service</th>
+                        <th>Grund</th>
+                        <th>Status</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>#{{ req.id }}</td>
+                        <td><strong>{{ req.user_name }}</strong></td>
+                        <td>{{ req.user_dept }}</td>
+                        <td>{{ req.service_id }}</td>
+                        <td><small>{{ req.reason }}</small></td>
+                        <td>
+                            <span class="status-badge 
+                                {% if req.status == 'Pending' %}status-pending
+                                {% elif req.status == 'Approved' %}status-approved
+                                {% else %}status-rejected{% endif %}">
+                                {{ req.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <form action="{{ url_for('admin_update_request', request_id=req.id) }}" method="post" style="display:inline;">
+                                <select name="status" onchange="this.form.submit()">
+                                    <option value="Pending" {% if req.status == 'Pending' %}selected{% endif %}>Warten</option>
+                                    <option value="Approved" {% if req.status == 'Approved' %}selected{% endif %}>Genehmigen</option>
+                                    <option value="Rejected" {% if req.status == 'Rejected' %}selected{% endif %}>Ablehnen</option>
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px; color: #999;">
+                            Noch keine Anfragen vorhanden.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-link" style="text-align: center; margin-top: 20px;">
+            <a href="{{ url_for('index') }}">← Zurück zum Katalog</a> |
+            <a href="{{ url_for('add_service_form') }}">➕ Neuen Service anlegen</a>
+        </div>
     </div>
 </body>
 </html>

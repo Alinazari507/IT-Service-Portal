@@ -2,45 +2,94 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Meine Anfragen</title>
+    <title>Meine Anfragen | IT Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Status-Badges für bessere Übersicht */
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .status-pending { background-color: #ffc107; color: #856404; } /* Gelb für Warten */
+        .status-approved { background-color: #28a745; color: white; }  /* Grün für Genehmigt */
+        .status-rejected { background-color: #dc3545; color: white; }  /* Rot für Abgelehnt */
+        
+        .request-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-top: 20px;
+        }
+        
+        .request-table th, .request-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .request-table th {
+            background-color: #f8f9fa;
+            color: var(--primary);
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h2>📋 Meine IT-Anfragen</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Service-ID</th>
-                    <th>Grund (Reason)</th>
-                    <th>Status</th>
-                    <th>Erstellt am</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for req in requests %}
-                <tr>
-                    <td><strong>{{ req.service_id }}</strong></td>
-                    <td>{{ req.reason }}</td>
-                    <td>
-                        <span class="status-{{ req.status.lower() }}">
-                            {{ req.status }}
-                        </span>
-                    </td>
-                    <td>{{ req.created_at }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4">Keine Anfragen vorhanden.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <div class="admin-link" style="margin-top: 20px;">
-            <a href="{{ url_for('index') }}" class="btn-secondary" style="text-decoration: none; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+        <header class="header">
+            <h1>📋 Meine Service-Anfragen</h1>
+            <small>Hier sehen Sie den aktuellen Status Ihrer bisherigen Bestellungen</small>
+        </header>
+
+        <div class="column">
+            <table class="request-table">
+                <thead>
+                    <tr>
+                        <th>Service-ID</th>
+                        <th>Grund / Beschreibung</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td><strong>{{ req.service_id }}</strong></td>
+                        <td>{{ req.reason if req.reason else 'Keine Angabe' }}</td>
+                        <td>
+                            <span class="status-badge 
+                                {% if req.status == 'Pending' %}status-pending
+                                {% elif req.status == 'Approved' %}status-approved
+                                {% else %}status-rejected{% endif %}">
+                                {{ req.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 40px; color: #999;">
+                            Sie haben bisher noch keine Services angefordert.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="{{ url_for('index') }}" class="btn" style="text-decoration: none; background-color: var(--primary); color: white;">
                 ← Zurück zum Katalog
             </a>
         </div>
+
+        <footer style="margin-top: 50px; text-align: center; font-size: 0.8em; color: #777;">
+            &copy; 2026 IT Service Portal – Transparente IT-Leistungen
+        </footer>
     </div>
 </body>
 </html>

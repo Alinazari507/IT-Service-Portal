@@ -1,33 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>Registrierung</title>
+    <meta charset="UTF-8">
+    <title>Registrierung | IT Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <div class="container">
-        <h2>Neuen Benutzer anlegen</h2>
+<body style="background-color: #f4f7f6; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+    <div class="container" style="max-width: 450px; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <div class="header" style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: var(--primary);">📝 Registrierung</h1>
+            <small>Erstellen Sie Ihr Konto für das IT-Portal</small>
+        </div>
+
         {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <ul>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
+          {% if messages %}
+            {% for message in messages %}
+              <div style="color: #721c24; background-color: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 0.9em;">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
         {% endwith %}
-        <form method="post">
-            <label>Benutzername:</label><br>
-            <input type="text" name="username" required><br>
-            <label>Passwort:</label><br>
-            <input type="password" name="password" required><br>
-            <label>Vollständiger Name:</label><br>
-            <input type="text" name="fullname" required><br>
-            <label>Abteilung:</label><br>
-            <input type="text" name="department" required><br>
-            <button type="submit">Registrieren</button>
+
+        <form action="{{ url_for('register') }}" method="POST">
+            <div style="margin-bottom: 15px;">
+                <label>Benutzername</label>
+                <input type="text" name="username" placeholder="z.B. m.ali" required 
+                       style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label>Passwort</label>
+                <input type="password" name="password" placeholder="******" required 
+                       style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label>Vollständiger Name</label>
+                <input type="text" name="fullname" placeholder="Mohammad Ali" required 
+                       style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label>Abteilung</label>
+                <select name="department" style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="IT">IT</option>
+                    <option value="HR">HR / Personal</option>
+                    <option value="Finanzen">Finanzen</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Vertrieb">Vertrieb</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%; background-color: var(--primary); border: none;">
+                Account erstellen
+            </button>
         </form>
-        <p><a href="{{ url_for('login') }}">Zurück zum Login</a></p>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 0.9em;">
+            Bereits ein Konto? <a href="{{ url_for('login') }}" style="color: var(--primary); text-decoration: none; font-weight: bold;">Hier einloggen</a>
+        </div>
     </div>
 </body>
 </html>
