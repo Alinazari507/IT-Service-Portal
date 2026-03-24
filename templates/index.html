@@ -2,44 +2,128 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IT Service Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .service-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .business-box {
+            background-color: #f0f7ff;
+            border-left: 5px solid #007bff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .tech-box {
+            display: none;
+            background-color: #f9f9f9;
+            border: 1px dashed #ccc;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .btn-request {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .tech-toggle {
+            background: none;
+            border: none;
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            font-size: 0.9em;
+        }
+        .meta-info {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .sla-cost {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>✨ Mein IT-Service-Portal</h1>
-            <p>Willkommen, {{ user.fullname }} ({{ user.department }})</p>
+        <div class="header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+            <h1 style="color: #007bff; margin: 0;">✨ Mein IT-Service-Portal</h1>
+            <div class="user-badge">Willkommen, {{ user.fullname }} ({{ user.department }})</div>
         </div>
 
-        <div class="categories">
-            <a href="{{ url_for('index') }}" class="btn-small">Alle</a>
-            <a href="{{ url_for('index', category='Hardware') }}" class="btn-small">Hardware</a>
-            <a href="{{ url_for('index', category='Software') }}" class="btn-small">Software</a>
-            <a href="{{ url_for('index', category='Support') }}" class="btn-small">Support</a>
+        <div class="welcome-section" style="margin: 20px 0;">
+            <h2>🌟 Willkommen im Service-Portal, {{ user.fullname }}!<br>Wie kann ich Ihnen heute helfen?</h2>
+            <p><strong>Kategorien</strong></p>
+            <div class="categories">
+                <a href="{{ url_for('index') }}" class="btn-small">Alle</a>
+                <a href="{{ url_for('index', category='Hardware') }}" class="btn-small">Hardware</a>
+                <a href="{{ url_for('index', category='Software') }}" class="btn-small">Software</a>
+                <a href="{{ url_for('index', category='Zugang') }}" class="btn-small">Zugang & Berechtigungen</a>
+                <a href="{{ url_for('index', category='Support') }}" class="btn-small">Support</a>
+            </div>
         </div>
 
         {% for service in services %}
-        <div class="service-card" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
-            <h3>{{ service.name }}</h3>
-            <p>{{ service.description_business }}</p>
-            <p><small>ID: {{ service.id }} | SLA: {{ service.sla }}</small></p>
-            <a href="{{ url_for('show_request_form', service_id=service.id) }}" class="btn-primary" 
-               style="background-color: #28a745; color: white; padding: 10px; text-decoration: none; border-radius: 5px; display: inline-block;">
-               📦 Jetzt anfordern
-            </a>
+        <div class="service-card">
+            <a href="{{ url_for('show_request_form', service_id=service.id) }}" class="btn-request">📦 Jetzt anfordern</a>
+            
+            <h3 style="margin-top: 0; color: #004085;">{{ service.name }}</h3>
+            <div class="meta-info">
+                Ref-ID: {{ service.id }} | Verfügbarkeit: {{ service.availability }}
+            </div>
+
+            <div class="business-box">
+                <strong>📋 Business-Beschreibung:</strong> {{ service.description_business }}
+            </div>
+
+            <button class="tech-toggle" onclick="toggleTech('tech-{{ service.id }}')">🔍 Technische Details</button>
+            <div id="tech-{{ service.id }}" class="tech-box">
+                <strong>⚙️ Technische Sicht:</strong> {{ service.description_technical }}
+            </div>
+
+            <div class="sla-cost">
+                <div style="color: #28a745;">⏱️ SLA: {{ service.sla }}</div>
+                <div style="color: #dc3545;">💰 Kosten: {{ service.costs }}</div>
+            </div>
         </div>
         {% endfor %}
 
-        <hr style="margin-top: 30px;">
-        <div class="footer-links" style="text-align: center; margin-top: 20px;">
+        <div class="footer" style="margin-top: 50px; text-align: center; border-top: 1px solid #ddd; padding-top: 20px;">
             <a href="{{ url_for('requests_list') }}">📋 Meine Anfragen</a> | 
             {% if user.role == 'admin' %}
-                <a href="{{ url_for('admin_panel') }}">🛠️ Admin-Panel</a> |
-                <a href="{{ url_for('add_service_form') }}">➕ Neuen Service</a> |
+                <a href="{{ url_for('admin_panel') }}">🛠️ Admin-Panel</a> | 
+                <a href="{{ url_for('add_service_form') }}">➕ Neuer Service</a> |
             {% endif %}
             <a href="{{ url_for('logout') }}" style="color: red;">🚪 Abmelden</a>
         </div>
     </div>
+
+    <script>
+        function toggleTech(id) {
+            var x = document.getElementById(id);
+            if (x.style.display === "block") {
+                x.style.display = "none";
+            } else {
+                x.style.display = "block";
+            }
+        }
+    </script>
 </body>
 </html>

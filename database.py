@@ -52,6 +52,18 @@ def init_db():
             department TEXT
         )
     ''')
+    
+    # --- بخش اضافه شده برای ادمین همیشگی ---
+    # این کد چک می‌کند اگر یوزر ادمین وجود ندارد، آن را بسازد
+    c.execute("SELECT * FROM users WHERE username = 'admin'")
+    if not c.fetchone():
+        # پسورد مورد نظر شما به سبک امن
+        secure_password = "Kein-Zugriff-fur-User-2026!"
+        c.execute('''
+            INSERT INTO users (username, password, role, fullname, department)
+            VALUES (?, ?, ?, ?, ?)
+        ''', ('admin', secure_password, 'admin', 'System Administrator', 'IT Management'))
+    # ---------------------------------------
 
     conn.commit()
     conn.close()
