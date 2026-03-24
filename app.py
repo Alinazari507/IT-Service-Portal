@@ -114,6 +114,22 @@ def admin_update_request(request_id):
     new_status = request.form['status']
     database.update_request_status(request_id, new_status)
     return redirect(url_for('admin_panel'))
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        fullname = request.form['fullname']
+        department = request.form['department']
+        # بررسی وجود کاربر
+        if database.get_user(username):
+            flash('Benutzername existiert bereits.')
+            return redirect(url_for('register'))
+        # ایجاد کاربر جدید (نقش پیش‌فرض 'user')
+        database.add_user(username, password, 'user', fullname, department)
+        flash('Benutzer erfolgreich angelegt. Bitte einloggen.')
+        return redirect(url_for('login'))
+    return render_template('register.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

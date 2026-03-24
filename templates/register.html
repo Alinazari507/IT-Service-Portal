@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>Login - IT Service Portal</title>
+    <meta charset="UTF-8">
+    <title>Registrierung</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h2>Login</h2>
+        <h2>Neuen Benutzer anlegen</h2>
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 <ul>
@@ -17,13 +18,17 @@
             {% endif %}
         {% endwith %}
         <form method="post">
-            <label>Username:</label><br>
+            <label>Benutzername:</label><br>
             <input type="text" name="username" required><br>
-            <label>Password:</label><br>
+            <label>Passwort:</label><br>
             <input type="password" name="password" required><br>
-            <button type="submit">Login</button>
+            <label>Vollständiger Name:</label><br>
+            <input type="text" name="fullname" required><br>
+            <label>Abteilung:</label><br>
+            <input type="text" name="department" required><br>
+            <button type="submit">Registrieren</button>
         </form>
-        <p>Noch keinen Account? <a href="{{ url_for('register') }}">Jetzt registrieren</a></p>
+        <p><a href="{{ url_for('login') }}">Zurück zum Login</a></p>
     </div>
 </body>
 </html>
