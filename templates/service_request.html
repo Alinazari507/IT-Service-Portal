@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Service anfordern</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Service-Anforderung: {{ service_id }}</h2>
+        <form action="/request" method="POST">
+            <input type="hidden" name="service_id" value="{{ service_id }}">
+            <p>Antragsteller: <strong>{{ user.name }}</strong> ({{ user.dept }})</p>
+            <div class="form-group">
+                <label>Grund für die Anforderung:</label><br>
+                <textarea name="reason" rows="5" style="width:100%" required></textarea>
+            </div>
+            <br>
+            <button type="submit" class="btn-primary" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; cursor: pointer;">
+                Bestellung bestätigen
+            </button>
+            <a href="/" class="btn-secondary">Abbrechen</a>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,13 +1,12 @@
-# database.py
 import sqlite3
-import json
 
 DB_PATH = 'data/catalog.db'
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    # جدول سرویس‌ها
+
+    # Services table
     c.execute('''
         CREATE TABLE IF NOT EXISTS services (
             id TEXT PRIMARY KEY,
@@ -21,7 +20,8 @@ def init_db():
             active INTEGER DEFAULT 1
         )
     ''')
-    # جدول درخواست‌ها
+
+    # Requests table
     c.execute('''
         CREATE TABLE IF NOT EXISTS requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,8 +33,22 @@ def init_db():
             FOREIGN KEY (service_id) REFERENCES services(id)
         )
     ''')
+
+    # Users table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'user',
+            fullname TEXT,
+            department TEXT
+        )
+    ''')
+
     conn.commit()
     conn.close()
+
 
 def get_services(category=None):
     conn = sqlite3.connect(DB_PATH)
@@ -45,7 +59,6 @@ def get_services(category=None):
         c.execute("SELECT * FROM services WHERE active=1")
     rows = c.fetchall()
     conn.close()
-    # تبدیل به لیست دیکشنری
     services = []
     for row in rows:
         services.append({
@@ -60,6 +73,7 @@ def get_services(category=None):
             'active': row[8]
         })
     return services
+
 
 def get_service(service_id):
     conn = sqlite3.connect(DB_PATH)
@@ -81,6 +95,7 @@ def get_service(service_id):
         }
     return None
 
+
 def add_service(service):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -92,6 +107,7 @@ def add_service(service):
     conn.commit()
     conn.close()
 
+
 def add_request(service_id, user_name, user_dept):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -102,6 +118,7 @@ def add_request(service_id, user_name, user_dept):
     conn.commit()
     conn.close()
     return c.lastrowid
+
 
 def get_requests(user_name=None):
     conn = sqlite3.connect(DB_PATH)
@@ -123,3 +140,44 @@ def get_requests(user_name=None):
             'created_at': row[5]
         })
     return requests
+
+
+def get_all_requests():
+    return get_requests(user_name=None)
+
+
+def update_request_status(request_id, new_status):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE requests SET status = ? WHERE id = ?", (new_status, request_id))
+    conn.commit()
+    conn.close()
+
+
+def get_user(username):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE username = ?", (username,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return {
+            'id': row[0],
+            'username': row[1],
+            'password': row[2],
+            'role': row[3],
+            'fullname': row[4],
+            'department': row[5]
+        }
+    return None
+
+
+def add_user(username, password, role='user', fullname='', department=''):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO users (username, password, role, fullname, department)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (username, password, role, fullname, department))
+    conn.commit()
+    conn.close()

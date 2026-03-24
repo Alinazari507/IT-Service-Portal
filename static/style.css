@@ -64,13 +64,9 @@ body {
 /* Categories Navigation */
 .categories {
     margin-bottom: 30px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
 }
 
 .categories h3 {
-    width: 100%;
     margin-bottom: 10px;
     color: var(--secondary);
 }
@@ -80,6 +76,7 @@ body {
     flex-wrap: wrap;
     gap: 15px;
     list-style: none;
+    padding: 0;
 }
 
 .categories a {

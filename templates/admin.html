@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Requests</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Admin - Alle Anfragen</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Service</th>
+                    <th>User</th>
+                    <th>Status</th>
+                    <th>Erstellt am</th>
+                    <th>Aktion</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td>{{ req.id }}</td>
+                    <td>{{ req.service_id }}</td>
+                    <td>{{ req.user_name }} ({{ req.user_dept }})</td>
+                    <td>{{ req.status }}</td>
+                    <td>{{ req.created_at }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin_update_request', request_id=req.id) }}">
+                            <select name="status">
+                                <option value="Pending" {% if req.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="In Progress" {% if req.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Completed" {% if req.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                <option value="Rejected" {% if req.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                            </select>
+                            <button type="submit">Update</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('index') }}">Zurück zum Katalog</a>
+    </div>
+</body>
+</html>
