@@ -1,0 +1,32 @@
+[
+    {
+        "id": "HW-001",
+        "name": "Lenovo ThinkPad X1",
+        "category": "Hardware",
+        "availability": "Sofort",
+        "description_business": "Hochwertiges Notebook für mobiles Arbeiten mit langer Akkulaufzeit.",
+        "description_technical": "Bereitstellung aus Lager, Image über SCCM, Eintrag in CMDB.",
+        "sla": "3 Werktage",
+        "costs": "kostenfrei"
+    },
+    {
+        "id": "SW-002",
+        "name": "Microsoft 365 E3",
+        "category": "Software",
+        "availability": "24h",
+        "description_business": "Vollständiges Office-Paket inkl. OneDrive und Teams.",
+        "description_technical": "Lizenzzuweisung im Admin-Portal, Aktivierung des Benutzers in Azure AD.",
+        "sla": "1 Werktag",
+        "costs": "12€/Monat"
+    },
+    {
+        "id": "ACC-003",
+        "name": "VPN-Zugang",
+        "category": "Zugang",
+        "availability": "sofort",
+        "description_business": "Sicherer Fernzugriff auf das Firmennetzwerk von überall.",
+        "description_technical": "Einrichtung des VPN-Zertifikats, Aktivierung MFA, Eintrag in AD-Gruppe.",
+        "sla": "1 Stunde",
+        "costs": "kostenfrei"
+    }
+]

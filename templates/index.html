@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>IT Service Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ Mein IT-Service-Portal</h1>
+            <small>Ihr persönlicher Zugang zu allen IT-Services – schnell, transparent, zuverlässig</small>
+        </div>
+
+        <div class="user-info">
+            <strong>👤 Angemeldet als:</strong> {{ user.name }}<br>
+            <strong>🏢 Abteilung:</strong> {{ user.dept }}
+        </div>
+
+        <h2>🌟 Willkommen im Service-Portal, {{ user.name }}!<br>Wie kann ich Ihnen heute helfen?</h2>
+
+        <div class="categories">
+            <h3>Kategorien</h3>
+            <ul>
+                <li><a href="{{ url_for('index', category='Hardware') }}">Hardware</a></li>
+                <li><a href="{{ url_for('index', category='Software') }}">Software</a></li>
+                <li><a href="{{ url_for('index', category='Zugang') }}">Zugang & Berechtigungen</a></li>
+                <li><a href="{{ url_for('index', category='Support') }}">Support</a></li>
+                <li><a href="{{ url_for('index') }}">Alle</a></li>
+            </ul>
+        </div>
+
+        {% for service in services %}
+        <div class="service-card">
+            <div class="service-info">
+                <div class="service-name">{{ service.name }}</div>
+                <div class="service-meta">Ref-ID: {{ service.id }} | Verfügbarkeit: {{ service.availability }}</div>
+                <div class="business-view">
+                    <strong>📋 Business-Beschreibung:</strong> {{ service.description_business }}
+                </div>
+                <button class="btn" onclick="toggleTechnical('tech-{{ service.id }}')">🔍 Technische Details einblenden</button>
+                <div id="tech-{{ service.id }}" class="technical-view" style="display:none;">
+                    <strong>⚙️ Technische Sicht:</strong> {{ service.description_technical }}
+                </div>
+                {% if service.sla %}
+                <div class="sla">⏱️ SLA: {{ service.sla }}</div>
+                {% endif %}
+                {% if service.costs %}
+                <div class="costs">💰 Kosten: {{ service.costs }}</div>
+                {% endif %}
+            </div>
+            <form action="{{ url_for('request_service') }}" method="post">
+                <input type="hidden" name="service_id" value="{{ service.id }}">
+                <button type="submit" class="btn">📦 Jetzt anfordern</button>
+            </form>
+        </div>
+        {% endfor %}
+
+        <div class="two-columns">
+            <div class="column">
+                <h3>📋 Service-Katalog (für Mitarbeiter)</h3>
+                <p>Wählen Sie einen Service aus und fordern Sie ihn direkt an – ganz ohne Umwege.</p>
+            </div>
+            <div class="column">
+                <h3>⚙️ IT-Administration (CMDB)</h3>
+                <p>Interne Übersicht für Administratoren: Alle IT-Assets und deren Abhängigkeiten.</p>
+            </div>
+        </div>
+
+        <div class="admin-link">
+            <a href="{{ url_for('add_service_form') }}">➕ Neuen Service anlegen</a> |
+            <a href="{{ url_for('requests_list') }}">📋 Meine Anfragen</a>
+        </div>
+
+        <footer>&copy; 2026 IT Service Portal – Transparente IT-Leistungen</footer>
+    </div>
+
+    <script>
+        function toggleTechnical(id) {
+            var elem = document.getElementById(id);
+            if (elem.style.display === "none") {
+                elem.style.display = "block";
+            } else {
+                elem.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Meine Anfragen</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>📋 Meine IT-Anfragen</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Service-ID</th>
+                    <th>Status</th>
+                    <th>Erstellt am</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td>{{ req.service_id }}</td>
+                    <td>{{ req.status }}</td>
+                    <td>{{ req.created_at }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3">Keine Anfragen vorhanden.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="admin-link">
+            <a href="{{ url_for('index') }}">← Zurück zum Katalog</a>
+        </div>
+    </div>
+</body>
+</html>
