@@ -2,93 +2,62 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>IT-Asset Management (CMDB)</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Service Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="bg-light">
-    <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-dark">🖥️ IT-Asset Management (CMDB)</h2>
-            <a href="/admin" class="btn btn-outline-secondary">Zurück zum Dashboard</a>
+<body>
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1>✨ Mein IT-Service-Portal</h1>
+                <p style="color: #7f8c8d; font-size: 0.9rem;">Ihr persönlicher Zugang zu allen IT-Services</p>
+            </div>
+            <div class="user-info">
+                <p>👤 <strong>Angemeldet als:</strong> {{ user.fullname }}</p>
+                <p>🏢 <strong>Abteilung:</strong> {{ user.department }}</p>
+            </div>
+        </header>
+
+        <div class="categories">
+            <h3>Kategorien</h3>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Alle</a></li>
+                <li><a href="{{ url_for('index', category='Hardware') }}">Hardware</a></li>
+                <li><a href="{{ url_for('index', category='Software') }}">Software</a></li>
+            </ul>
         </div>
 
-        <div class="card shadow-sm mb-5 border-0">
-            <div class="card-header bg-primary text-white py-3">
-                <h5 class="mb-0">Neues Gerät registrieren</h5>
+        <div class="services-list">
+            {% for service in services %}
+            <div class="service-card">
+                <div class="service-info">
+                    <h2 class="service-name">{{ service.name }}</h2>
+                    <p class="service-meta">Ref-ID: {{ service.id }} | Verfügbarkeit: {{ service.availability }}</p>
+                    <div class="business-view">
+                        <strong>Business-Beschreibung:</strong> {{ service.description_business }}
+                    </div>
+                    <p class="sla" style="color: var(--success);">⏱ SLA: {{ service.sla }}</p>
+                    <p class="costs" style="color: var(--danger);">💰 Kosten: {{ service.costs }}</p>
+                </div>
+                <div style="align-self: center;">
+                    <a href="{{ url_for('show_request_form', service_id=service.id) }}" class="btn">📦 Jetzt anfordern</a>
+                </div>
             </div>
-            <div class="card-body p-4">
-                <form action="/admin/cmdb" method="post" class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Asset Tag</label>
-                        <input type="text" name="asset_tag" class="form-control" placeholder="HW-001" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Gerätetyp</label>
-                        <input type="text" name="geraetetyp" class="form-control" placeholder="Laptop..." required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Modell</label>
-                        <input type="text" name="hersteller_modell" class="form-control" placeholder="HP EliteBook..." required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Seriennummer</label>
-                        <input type="text" name="seriennummer" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">Nutzer / Standort</label>
-                        <input type="text" name="nutzer_standort" class="form-control">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">Status</label>
-                        <select name="status" class="form-select">
-                            <option value="Im Lager">Im Lager</option>
-                            <option value="Zugewiesen">Zugewiesen</option>
-                            <option value="Defekt">Defekt</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-success w-100 fw-bold">Asset speichern</button>
-                    </div>
-                    <input type="hidden" name="kaufdatum" value="">
-                    <input type="hidden" name="garantie_bis" value="">
-                    <input type="hidden" name="lizenz_bis" value="-">
-                </form>
-            </div>
+            {% endfor %}
         </div>
 
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-0">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Asset Tag</th>
-                            <th>Typ</th>
-                            <th>Modell</th>
-                            <th>S/N</th>
-                            <th>Nutzer/Standort</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in items %}
-                        <tr>
-                            <td class="fw-bold">{{ item.asset_tag }}</td>
-                            <td>{{ item.geraetetyp }}</td>
-                            <td>{{ item.hersteller_modell }}</td>
-                            <td><code>{{ item.seriennummer }}</code></td>
-                            <td>{{ item.nutzer_standort }}</td>
-                            <td><span class="badge bg-info text-dark">{{ item.status }}</span></td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">Keine Daten vorhanden.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <footer style="margin-top: 50px; text-align: center; border-top: 1px solid #ddd; padding-top: 20px;">
+            <div class="admin-link">
+                {% if user.role == 'admin' %}
+                <a href="{{ url_for('admin_panel') }}">🛠 Admin-Panel</a> | 
+                <a href="{{ url_for('admin_cmdb') }}">🖥️ IT-Administration (CMDB)</a> |
+                {% endif %}
+                <a href="{{ url_for('requests_list') }}">📋 Meine Anfragen</a> | 
+                <a href="{{ url_for('logout') }}" style="color: var(--danger);">🚪 Abmelden</a>
             </div>
-        </div>
+            <p style="font-size: 0.8rem; color: var(--gray); margin-top: 10px;">© 2026 IT Service Portal - Transparente IT-Leistungen</p>
+        </footer>
     </div>
 </body>
 </html>
