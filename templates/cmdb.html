@@ -9,33 +9,51 @@
 
     <div class="card mb-4 shadow-sm">
         <div class="card-header bg-dark text-white">
-            <h5 class="mb-0">Neues Gerät registrieren</h5>
+            <h5 class="mb-0">Neues Gerät / Asset registrieren</h5>
         </div>
         <div class="card-body">
             <form action="/admin/cmdb" method="post" class="row g-3">
-                <div class="col-md-2">
-                    <input type="text" name="asset_tag" class="form-control" placeholder="Asset Tag (z.B. HW-001)" required>
+                <div class="col-md-3">
+                    <label class="form-label">Asset Tag</label>
+                    <input type="text" name="asset_tag" class="form-control" placeholder="z.B. HW-001" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Gerätetyp</label>
+                    <input type="text" name="geraetetyp" class="form-control" placeholder="Laptop, Monitor..." required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Hersteller/Modell</label>
+                    <input type="text" name="hersteller_modell" class="form-control" placeholder="Lenovo T14..." required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Seriennummer</label>
+                    <input type="text" name="seriennummer" class="form-control" placeholder="S/N 12345..." required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Kaufdatum</label>
+                    <input type="date" name="kaufdatum" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nutzer / Standort</label>
+                    <input type="text" name="nutzer_standort" class="form-control" placeholder="Max Mustermann / Berlin">
                 </div>
                 <div class="col-md-2">
-                    <input type="text" name="item_name" class="form-control" placeholder="Gerätename" required>
+                    <label class="form-label">Garantie bis</label>
+                    <input type="date" name="garantie_bis" class="form-control">
                 </div>
                 <div class="col-md-2">
-                    <input type="text" name="serial_number" class="form-control" placeholder="Seriennummer" required>
-                </div>
-                <div class="col-md-2">
-                    <input type="text" name="assigned_to" class="form-control" placeholder="Benutzer">
-                </div>
-                <div class="col-md-2">
+                    <label class="form-label">Status</label>
                     <select name="status" class="form-select">
-                        <option value="Aktiv">Aktiv</option>
-                        <option value="Lager">Im Lager</option>
+                        <option value="Im Lager">Im Lager</option>
+                        <option value="Zugewiesen">Zugewiesen</option>
+                        <option value="Bestellt">Bestellt</option>
                         <option value="Defekt">Defekt</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">Hinzufügen</button>
                 </div>
-                <input type="hidden" name="location" value="Zentrale">
+                <input type="hidden" name="lizenz_bis" value="-">
             </form>
         </div>
     </div>
@@ -44,45 +62,51 @@
         <div class="card-body">
             <div class="input-group">
                 <span class="input-group-text bg-info text-white">🔍 Suche</span>
-                <input type="text" id="inventorySearch" class="form-control" placeholder="Nach Asset-Tag, Name, Seriennummer oder Benutzer suchen...">
+                <input type="text" id="inventorySearch" class="form-control" placeholder="Nach Asset-Tag, Typ, Modell oder Nutzer suchen...">
             </div>
         </div>
     </div>
 
     <div class="card shadow-sm">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0" id="inventoryTable">
-                <thead class="table-light">
-                    <tr>
-                        <th>Asset Tag</th>
-                        <th>Name</th>
-                        <th>Seriennummer</th>
-                        <th>Zugewiesen an</th>
-                        <th>Status</th>
-                        <th>Letztes Update</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in items %}
-                    <tr>
-                        <td><strong>{{ item[1] }}</strong></td>
-                        <td>{{ item[2] }}</td>
-                        <td><code>{{ item[3] }}</code></td>
-                        <td>{{ item[4] if item[4] else '-' }}</td>
-                        <td>
-                            <span class="badge {% if item[5] == 'Aktiv' %}bg-success{% elif item[5] == 'Defekt' %}bg-danger{% else %}bg-secondary{% endif %}">
-                                {{ item[5] }}
-                            </span>
-                        </td>
-                        <td><small class="text-muted">{{ item[7] }}</small></td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center py-4">Keine Geräte im Inventar gefunden.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="inventoryTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Asset Tag</th>
+                            <th>Typ</th>
+                            <th>Modell</th>
+                            <th>S/N</th>
+                            <th>Kaufdatum</th>
+                            <th>Nutzer/Standort</th>
+                            <th>Garantie</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td><strong>{{ item.asset_tag }}</strong></td>
+                            <td>{{ item.geraetetyp }}</td>
+                            <td>{{ item.hersteller_modell }}</td>
+                            <td><code>{{ item.seriennummer }}</code></td>
+                            <td>{{ item.kaufdatum }}</td>
+                            <td>{{ item.nutzer_standort if item.nutzer_standort else '-' }}</td>
+                            <td>{{ item.garantie_bis }}</td>
+                            <td>
+                                <span class="badge {% if item.status == 'Zugewiesen' %}bg-success{% elif item.status == 'Bestellt' %}bg-warning{% elif item.status == 'Defekt' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    {{ item.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">Keine Geräte im Inventar gefunden.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -91,15 +115,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('inventorySearch');
     const table = document.getElementById('inventoryTable');
-    const rows = table.getElementsByTagName('tr');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
 
     searchInput.addEventListener('keyup', function() {
         const searchText = searchInput.value.toLowerCase();
-
-        for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchText) ? "" : "none";
+        for (let i = 0; i < rows.length; i++) {
+            const text = rows[i].textContent.toLowerCase();
+            rows[i].style.display = text.includes(searchText) ? "" : "none";
         }
     });
 });

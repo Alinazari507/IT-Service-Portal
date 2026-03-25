@@ -19,7 +19,6 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Lädt den Benutzer aus der Datenbank für Flask-Login."""
     try:
         conn = sqlite3.connect(database.DB_PATH)
         c = conn.cursor()
@@ -32,12 +31,10 @@ def load_user(user_id):
         return None
     return None
 
-# Initialisiert die Datenbank beim Start
 database.init_db()
 
 @app.route('/health')
 def health_check():
-    """Health Check für Render Auto-Deploy."""
     return "OK", 200
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -64,10 +61,9 @@ def register():
         if database.get_user(username):
             flash('Benutzername existiert bereits.')
             return redirect(url_for('register'))
-        # Erster User oder 'admin' wird Admin
         role = 'admin' if username.lower() == 'admin' else 'user'
         database.add_user(username, password, role, fullname, department)
-        flash('Registrierung erfolgreich. Bitte einloggen.')
+        flash('Registrierung erfolgreich.')
         return redirect(url_for('login'))
     return render_template('register.html')
 
@@ -95,9 +91,8 @@ def show_request_form(service_id):
 def request_service():
     service_id = request.form['service_id']
     reason = request.form.get('reason', '')
-    # Nutzt fullname des aktuellen Users für das Ticket
     database.add_request(service_id, current_user.fullname, current_user.department, reason)
-    flash('Ihre Anfrage wurde erfolgreich gesendet.')
+    flash('Ihre Anfrage wurde gesendet.')
     return redirect(url_for('requests_list'))
 
 @app.route('/requests')
@@ -117,14 +112,17 @@ def admin_panel():
         requests_all = database.get_all_requests()
         return render_template('admin.html', requests=requests_all, stats=stats, inv_count=inv_count)
     except Exception as e:
-        return f"Fehler im Admin-Bereich: {str(e)}", 500
+        return f"Error: {str(e)}", 500
 
 @app.route('/admin/update/<int:request_id>', methods=['POST'])
 @login_required
 def admin_update_request(request_id):
     if current_user.role == 'admin':
         new_status = request.form['status']
-        database.update_request_status(request_id, new_status)
+        # Ermöglicht Admin-Notizen beim Status-Update (z.B. "Bestellung initiiert")
+        admin_note = request.form.get('reason', '') 
+        database.update_request_status(request_id, new_status, admin_note)
+        flash('Status aktualisiert.')
     return redirect(url_for('admin_panel'))
 
 @app.route('/admin/cmdb', methods=['GET', 'POST'])
@@ -132,16 +130,25 @@ def admin_update_request(request_id):
 def admin_cmdb():
     if current_user.role != 'admin':
         return redirect(url_for('index'))
+    
     if request.method == 'POST':
-        success = database.add_inventory_item(
-            request.form['asset_tag'], request.form['item_name'],
-            request.form['serial_number'], request.form['assigned_to'],
-            request.form['status'], request.form['location']
-        )
+        # Erfasst alle 9 Felder aus Ihrem neuen CMDB-Design
+        inventory_data = {
+            'asset_tag': request.form['asset_tag'],
+            'geraetetyp': request.form['geraetetyp'],
+            'hersteller_modell': request.form['hersteller_modell'],
+            'seriennummer': request.form['seriennummer'],
+            'kaufdatum': request.form['kaufdatum'],
+            'status': request.form['status'],
+            'nutzer_standort': request.form['nutzer_standort'],
+            'garantie_bis': request.form['garantie_bis'],
+            'lizenz_bis': request.form['lizenz_bis']
+        }
+        success = database.add_inventory_item(inventory_data)
         if success:
             flash('Inventar erfolgreich aktualisiert.')
         else:
-            flash('Fehler: Asset Tag existiert bereits!')
+            flash('Fehler: Asset-Tag bereits vorhanden.')
         return redirect(url_for('admin_cmdb'))
     
     items = database.get_inventory()
@@ -164,7 +171,7 @@ def add_service_form():
             'costs': request.form['costs']
         }
         database.add_service(service_data)
-        flash('Service erfolgreich zum Katalog hinzugefügt.')
+        flash('Service hinzugefügt.')
         return redirect(url_for('index'))
     return render_template('add_service.html')
 
@@ -175,22 +182,20 @@ def export_tickets_excel():
         return "Zugriff verweigert", 403
     tickets = database.get_all_requests()
     if not tickets:
-        flash("Keine Daten zum Exportieren vorhanden.")
+        flash("Keine Daten vorhanden.")
         return redirect(url_for('admin_panel'))
     
     try:
         df = pd.DataFrame(tickets)
         output = io.BytesIO()
-        # Verwendet openpyxl für modernen Excel-Export
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='IT_Tickets')
         output.seek(0)
         return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                         as_attachment=True, download_name='IT_Service_Report_2026.xlsx')
+                         as_attachment=True, download_name='IT_Report_2026.xlsx')
     except Exception as e:
-        flash(f"Excel-Export fehlgeschlagen: {str(e)}")
+        flash(f"Export-Fehler: {str(e)}")
         return redirect(url_for('admin_panel'))
 
 if __name__ == '__main__':
-    # Lokal auf Port 5000 ausführen
     app.run(host='0.0.0.0', port=5000, debug=True)
