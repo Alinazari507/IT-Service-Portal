@@ -1,18 +1,15 @@
 import sqlite3
 import os
 
-# Erstellt den Ordner 'data', falls er nicht existiert
 if not os.path.exists('data'):
     os.makedirs('data')
 
 DB_PATH = 'data/catalog.db'
 
 def init_db():
-    """Initialisiert die Datenbanktabellen und Startdaten."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # Tabelle für IT-Services
     c.execute('''
         CREATE TABLE IF NOT EXISTS services (
             id TEXT PRIMARY KEY,
@@ -27,7 +24,6 @@ def init_db():
         )
     ''')
 
-    # Tabelle für Service-Anfragen (Tickets)
     c.execute('''
         CREATE TABLE IF NOT EXISTS requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +37,6 @@ def init_db():
         )
     ''')
 
-    # Tabelle für Benutzer
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,7 +48,6 @@ def init_db():
         )
     ''')
 
-    # Tabelle für IT-Inventory (CMDB)
     c.execute('''
         CREATE TABLE IF NOT EXISTS inventory (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,7 +61,6 @@ def init_db():
         )
     ''')
     
-    # Standard-Admin erstellen
     c.execute("SELECT * FROM users WHERE username = 'admin'")
     if not c.fetchone():
         secure_password = "Kein-Zugriff-fur-User-2026!"
@@ -81,19 +74,17 @@ def init_db():
     seed_data()
 
 def seed_data():
-    """Füllt die Datenbank mit Standard-Services."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM services")
     if c.fetchone()[0] == 0:
         services = [
             ('HW-001', 'Lenovo ThinkPad X1', 'Hardware', 'Sofort verfügbar', 
-             'Premium Business Notebook für mobiles Arbeiten.', 
-             'Intel i7, 16GB RAM, 512GB SSD, Windows 11 Pro.', '3 Werktage', '0€'),
+             'Premium Business Notebook.', 'i7, 16GB RAM, 512GB SSD.', '3 Werktage', '0€'),
             ('SW-002', 'Microsoft 365 Business', 'Software', '24h Aktivierung', 
              'Office-Paket (Word, Excel, Teams).', 'Cloud-Lizenz.', '1 Werktag', '12,50€'),
             ('ACC-003', 'VPN-Fernzugriff', 'Zugang', 'Sofort', 
-             'Sicherer Zugriff auf das Firmennetzwerk.', 'Cisco AnyConnect MFA.', '1 Stunde', '0€')
+             'Sicherer Zugriff auf das Firmennetzwerk.', 'Cisco MFA.', '1 Stunde', '0€')
         ]
         c.executemany("INSERT INTO services VALUES (?,?,?,?,?,?,?,?,1)", services)
         conn.commit()
@@ -134,10 +125,9 @@ def get_requests(user_name=None):
         c.execute("SELECT id, service_id, user_name, user_dept, status, reason, created_at FROM requests ORDER BY created_at DESC")
     rows = c.fetchall()
     conn.close()
-    return [{'id': r[0], 'service_id': r[1], 'user_name': r[2], 'user_dept': r[3], 'status': r[4], 'reason': r[5], 'created_at': r[6]} for r in rows]
+    return [{'id': r[0], 'service_id': r[1], 'user_name': r[2], 'user_dept': r[3], 'status': r[4], 'reason': r[5], 'date': r[6]} for r in rows]
 
 def get_all_requests():
-    """Gibt alle Anfragen als Liste von Dictionaries zurück (Wichtig für Excel)."""
     return get_requests()
 
 def update_request_status(request_id, new_status):

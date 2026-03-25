@@ -99,10 +99,13 @@ def requests_list():
 def admin_panel():
     if current_user.role != 'admin':
         return redirect(url_for('index'))
-    stats = database.get_ticket_stats()
-    inv_count = database.get_inventory_count()
-    requests_all = database.get_all_requests()
-    return render_template('admin.html', requests=requests_all, stats=stats, inv_count=inv_count)
+    try:
+        stats = database.get_ticket_stats()
+        inv_count = database.get_inventory_count()
+        requests_all = database.get_all_requests()
+        return render_template('admin.html', requests=requests_all, stats=stats, inv_count=inv_count)
+    except Exception as e:
+        return f"Error loading Admin Panel: {str(e)}", 500
 
 @app.route('/admin/update/<int:request_id>', methods=['POST'])
 @login_required
@@ -136,6 +139,7 @@ def export_tickets_excel():
     if not tickets:
         flash("Keine Daten vorhanden.")
         return redirect(url_for('admin_panel'))
+    
     df = pd.DataFrame(tickets)
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
