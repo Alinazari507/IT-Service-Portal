@@ -1,34 +1,34 @@
 import sqlite3
 import os
 
-# Verzeichnis für die Datenbank erstellen
+# Create directory for the database if it doesn't exist
 if not os.path.exists('data'):
     os.makedirs('data')
 
-# Datenbankpfad - Version 7 (Fix: Quoted correctly)
-DB_PATH = 'data/v7_final_stable.db'
+# Database path - Version 9 for clean sync on Render
+DB_PATH = 'data/v9_final_stable.db'
 
 def init_db():
     """Initialisiert die Datenbank mit der neuen CMDB-Struktur."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # Tabelle für IT-Services
+    # Table for IT-Services
     c.execute('''CREATE TABLE IF NOT EXISTS services (
         id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT, availability TEXT, 
         description_business TEXT, description_technical TEXT, sla TEXT, costs TEXT, active INTEGER DEFAULT 1)''')
 
-    # Tabelle für Service-Anfragen (Tickets)
+    # Table for Service Requests (Tickets)
     c.execute('''CREATE TABLE IF NOT EXISTS requests (
         id INTEGER PRIMARY KEY AUTOINCREMENT, service_id TEXT, user_name TEXT, 
         user_dept TEXT, status TEXT, reason TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
 
-    # Tabelle für Benutzer
+    # Table for Users
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, 
         password TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'user', fullname TEXT, department TEXT)''')
 
-    # Die neue Inventar-Tabelle
+    # Table for IT-Inventory (CMDB)
     c.execute('''CREATE TABLE IF NOT EXISTS inventory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         asset_tag TEXT UNIQUE,
@@ -42,7 +42,7 @@ def init_db():
         lizenz_bis TEXT,
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     
-    # Standard-Admin erstellen
+    # Create default admin user
     c.execute("SELECT * FROM users WHERE username = 'admin'")
     if not c.fetchone():
         c.execute("INSERT INTO users (username, password, role, fullname, department) VALUES (?, ?, ?, ?, ?)",
@@ -76,7 +76,8 @@ def get_inventory():
         return [{'id': r[0], 'asset_tag': r[1], 'geraetetyp': r[2], 'hersteller_modell': r[3], 
                  'seriennummer': r[4], 'kaufdatum': r[5], 'status': r[6], 
                  'nutzer_standort': r[7], 'garantie_bis': r[8], 'lizenz_bis': r[9]} for r in rows]
-    except:
+    except Exception as e:
+        print(f"Error fetching inventory: {e}")
         return []
     finally:
         conn.close()
@@ -94,7 +95,8 @@ def add_inventory_item(data):
              data['nutzer_standort'], data['garantie_bis'], data['lizenz_bis']))
         conn.commit()
         return True
-    except:
+    except Exception as e:
+        print(f"Error adding item: {e}")
         return False
     finally:
         conn.close()
