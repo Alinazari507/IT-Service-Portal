@@ -8,55 +8,78 @@
 </head>
 <body>
     <div class="container">
-        <header class="header">
+        <header class="header" style="border-bottom: 3px solid #0078d4; padding-bottom: 20px;">
             <div>
-                <h1>✨ Mein IT-Service-Portal</h1>
-                <p style="color: #7f8c8d; font-size: 0.9rem;">Ihr persönlicher Zugang zu allen IT-Services</p>
+                <h1><span style="color: #0078d4;">✨</span> Mein IT-Service-Portal</h1>
+                <p style="color: #666; font-size: 0.9rem; margin-top: 5px;">Ihr persönlicher Zugang zu allen IT-Services – schnell, transparent, zuverlässig</p>
             </div>
+            {% if current_user.is_authenticated %}
             <div class="user-info">
-                <p>👤 <strong>Angemeldet als:</strong> {{ user.fullname }}</p>
-                <p>🏢 <strong>Abteilung:</strong> {{ user.department }}</p>
+                <p>👤 <strong>Angemeldet als:</strong> {{ current_user.fullname }}</p>
+                <p>🏢 <strong>Abteilung:</strong> {{ current_user.department }}</p>
             </div>
+            {% endif %}
         </header>
 
-        <div class="categories">
-            <h3>Kategorien</h3>
-            <ul>
-                <li><a href="{{ url_for('index') }}">Alle</a></li>
-                <li><a href="{{ url_for('index', category='Hardware') }}">Hardware</a></li>
-                <li><a href="{{ url_for('index', category='Software') }}">Software</a></li>
-            </ul>
-        </div>
+        <main>
+            {% block content %}
+            <div style="margin-top: 20px;">
+                <h2 style="font-size: 1.5rem;">🌟 Willkommen im Service-Portal, {{ current_user.fullname }}!</h2>
+                <p style="font-weight: bold; margin-bottom: 20px;">Wie kann ich Ihnen heute helfen?</p>
+            </div>
 
-        <div class="services-list">
-            {% for service in services %}
-            <div class="service-card">
-                <div class="service-info">
-                    <h2 class="service-name">{{ service.name }}</h2>
-                    <p class="service-meta">Ref-ID: {{ service.id }} | Verfügbarkeit: {{ service.availability }}</p>
-                    <div class="business-view">
-                        <strong>Business-Beschreibung:</strong> {{ service.description_business }}
+            <div class="categories">
+                <h3>Kategorien</h3>
+                <ul>
+                    <li><a href="{{ url_for('index', category='Hardware') }}">Hardware</a></li>
+                    <li><a href="{{ url_for('index', category='Software') }}">Software</a></li>
+                    <li><a href="{{ url_for('index', category='Zugang & Berechtigungen') }}">Zugang & Berechtigungen</a></li>
+                    <li><a href="{{ url_for('index', category='Support') }}">Support</a></li>
+                    <li><a href="{{ url_for('index') }}" style="color: #666;">Alle</a></li>
+                </ul>
+            </div>
+
+            <div class="services-list">
+                {% for service in services %}
+                <div class="service-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; justify-content: space-between;">
+                    <div style="flex: 1;">
+                        <h2 style="color: #005a9e; margin: 0;">{{ service.name }}</h2>
+                        <p style="color: #888; font-size: 0.8rem; margin-bottom: 15px;">Ref-ID: {{ service.id }} | Verfügbarkeit: {{ service.availability }}</p>
+                        
+                        <div class="business-view" style="background: #f9f9f9; padding: 10px; border-left: 5px solid #0078d4; border-radius: 4px;">
+                            <strong>📋 Business-Beschreibung:</strong> {{ service.description_business }}
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <p style="font-size: 0.9rem; color: #555;">🔍 <span style="text-decoration: underline; cursor: help;">Technische Details</span></p>
+                            <div style="display: flex; gap: 20px; margin-top: 10px;">
+                                <span style="color: #28a745; font-weight: bold;">⏱ SLA: {{ service.sla }}</span>
+                                <span style="color: #dc3545; font-weight: bold;">💰 Kosten: {{ service.costs }}</span>
+                            </div>
+                        </div>
                     </div>
-                    <p class="sla" style="color: var(--success);">⏱ SLA: {{ service.sla }}</p>
-                    <p class="costs" style="color: var(--danger);">💰 Kosten: {{ service.costs }}</p>
-                </div>
-                <div style="align-self: center;">
-                    <a href="{{ url_for('show_request_form', service_id=service.id) }}" class="btn">📦 Jetzt anfordern</a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
 
-        <footer style="margin-top: 50px; text-align: center; border-top: 1px solid #ddd; padding-top: 20px;">
-            <div class="admin-link">
-                {% if user.role == 'admin' %}
-                <a href="{{ url_for('admin_panel') }}">🛠 Admin-Panel</a> | 
-                <a href="{{ url_for('admin_cmdb') }}">🖥️ IT-Administration (CMDB)</a> |
-                {% endif %}
-                <a href="{{ url_for('requests_list') }}">📋 Meine Anfragen</a> | 
-                <a href="{{ url_for('logout') }}" style="color: var(--danger);">🚪 Abmelden</a>
+                    <div style="display: flex; align-items: center; margin-left: 20px;">
+                        <a href="{{ url_for('show_request_form', service_id=service.id) }}" class="btn" style="background-color: #28a745; color: white; padding: 12px 25px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+                            📦 Jetzt anfordern
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-            <p style="font-size: 0.8rem; color: var(--gray); margin-top: 10px;">© 2026 IT Service Portal - Transparente IT-Leistungen</p>
+            {% endblock %}
+        </main>
+
+        <footer style="margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
+            <div class="admin-link">
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('admin_panel') }}" style="text-decoration: none; color: #0078d4;">🛠 Admin-Panel</a> | 
+                    <a href="{{ url_for('admin_cmdb') }}" style="text-decoration: none; color: #0078d4;">🖥️ IT-Administration (CMDB)</a> |
+                {% endif %}
+                <a href="{{ url_for('requests_list') }}" style="text-decoration: none; color: #0078d4;">📋 Meine Anfragen</a> | 
+                <a href="{{ url_for('logout') }}" style="color: #a52a2a; text-decoration: none;">🚪 Abmelden</a>
+            </div>
+            <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">© 2026 IT Service Portal – Transparente IT-Leistungen</p>
         </footer>
     </div>
 </body>

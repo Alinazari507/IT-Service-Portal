@@ -2,130 +2,90 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 style="color: #2c3e50;">🖥️ IT-Asset Management (CMDB)</h2>
-        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary btn-sm">Zurück zum Dashboard</a>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+        <h2 style="color: #0078d4; margin: 0;">🖥️ IT-Asset Management (CMDB)</h2>
+        <a href="{{ url_for('admin_panel') }}" class="btn" style="background: #6c757d; padding: 8px 15px; font-size: 0.9rem;">Zurück zum Dashboard</a>
     </div>
 
-    <div class="card mb-4 shadow-sm border-0" style="border-radius: 12px;">
-        <div class="card-header bg-dark text-white" style="border-radius: 12px 12px 0 0;">
-            <h5 class="mb-0">Neues Gerät / Asset registrieren</h5>
-        </div>
-        <div class="card-body bg-white">
-            <form action="{{ url_for('admin_cmdb') }}" method="post" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Asset Tag</label>
-                    <input type="text" name="asset_tag" class="form-control" placeholder="z.B. HW-001" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Gerätetyp</label>
-                    <input type="text" name="geraetetyp" class="form-control" placeholder="Laptop, Monitor..." required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Hersteller/Modell</label>
-                    <input type="text" name="hersteller_modell" class="form-control" placeholder="Lenovo T14..." required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Seriennummer</label>
-                    <input type="text" name="seriennummer" class="form-control" placeholder="S/N 12345..." required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Kaufdatum</label>
-                    <input type="date" name="kaufdatum" class="form-control">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Nutzer / Standort</label>
-                    <input type="text" name="nutzer_standort" class="form-control" placeholder="Name / Abteilung">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Garantie bis</label>
-                    <input type="date" name="garantie_bis" class="form-control">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="Im Lager">Im Lager</option>
-                        <option value="Zugewiesen">Zugewiesen</option>
-                        <option value="Bestellt">Bestellt</option>
-                        <option value="Defekt">Defekt</option>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">Hinzufügen</button>
-                </div>
-                <input type="hidden" name="lizenz_bis" value="-">
-            </form>
-        </div>
-    </div>
-
-    <div class="card mb-4 border-0 shadow-sm">
-        <div class="card-body">
-            <div class="input-group">
-                <span class="input-group-text bg-primary text-white">🔍 Suche</span>
-                <input type="text" id="inventorySearch" class="form-control" placeholder="Nach Asset-Tag, Typ, Modell oder Nutzer suchen...">
+    <div class="service-card" style="border: 1px solid #0078d4; border-radius: 10px; padding: 25px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 40px;">
+        <h3 style="margin-top: 0; color: #0078d4; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">✨ Neues Gerät registrieren</h3>
+        
+        <form action="{{ url_for('admin_cmdb') }}" method="post" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+            <div>
+                <label style="display:block; font-size: 0.8rem; font-weight: bold; color: #555;">Asset Tag</label>
+                <input type="text" name="asset_tag" placeholder="z.B. HW-001" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
             </div>
-        </div>
+            <div>
+                <label style="display:block; font-size: 0.8rem; font-weight: bold; color: #555;">Gerätetyp</label>
+                <input type="text" name="geraetetyp" placeholder="Laptop, Monitor..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+            </div>
+            <div>
+                <label style="display:block; font-size: 0.8rem; font-weight: bold; color: #555;">Hersteller/Modell</label>
+                <input type="text" name="hersteller_modell" placeholder="Lenovo T14..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+            </div>
+            <div>
+                <label style="display:block; font-size: 0.8rem; font-weight: bold; color: #555;">Seriennummer</label>
+                <input type="text" name="seriennummer" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+            </div>
+            <div>
+                <label style="display:block; font-size: 0.8rem; font-weight: bold; color: #555;">Status</label>
+                <select name="status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                    <option value="Im Lager">📦 Im Lager</option>
+                    <option value="Zugewiesen">👤 Zugewiesen</option>
+                    <option value="Bestellt">⏳ Bestellt</option>
+                    <option value="Defekt">❌ Defekt</option>
+                </select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn" style="width: 100%; background: #28a745; height: 40px; font-weight: bold;">Asset speichern</button>
+            </div>
+
+            <input type="hidden" name="kaufdatum" value="">
+            <input type="hidden" name="nutzer_standort" value="">
+            <input type="hidden" name="garantie_bis" value="">
+            <input type="hidden" name="lizenz_bis" value="-">
+        </form>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0" id="inventoryTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Asset Tag</th>
-                            <th>Typ</th>
-                            <th>Modell</th>
-                            <th>S/N</th>
-                            <th>Kaufdatum</th>
-                            <th>Nutzer/Standort</th>
-                            <th>Garantie</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in items %}
-                        <tr>
-                            <td><strong>{{ item.asset_tag }}</strong></td>
-                            <td>{{ item.geraetetyp }}</td>
-                            <td>{{ item.hersteller_modell }}</td>
-                            <td><code>{{ item.seriennummer }}</code></td>
-                            <td>{{ item.kaufdatum }}</td>
-                            <td>{{ item.nutzer_standort if item.nutzer_standort else '-' }}</td>
-                            <td>{{ item.garantie_bis }}</td>
-                            <td>
-                                <span class="badge {% if item.status == 'Zugewiesen' %}bg-success{% elif item.status == 'Bestellt' %}bg-warning{% elif item.status == 'Defekt' %}bg-danger{% else %}bg-secondary{% endif %}">
-                                    {{ item.status }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="8" class="text-center py-4 text-muted">Keine Geräte im Inventar gefunden.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    <div style="background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden;">
+        <div style="background: #343a40; color: white; padding: 15px 20px;">
+            <h3 style="margin: 0; font-size: 1.1rem;">🔍 Aktuelles Inventar</h3>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 12px; text-align: left;">Asset Tag</th>
+                        <th style="padding: 12px; text-align: left;">Typ</th>
+                        <th style="padding: 12px; text-align: left;">Modell</th>
+                        <th style="padding: 12px; text-align: left;">S/N</th>
+                        <th style="padding: 12px; text-align: left;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr style="border-bottom: 1px solid #eee; transition: background 0.2s;" onmouseover="this.style.background='#f1f8ff'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 12px;"><strong>{{ item.asset_tag }}</strong></td>
+                        <td style="padding: 12px;">{{ item.geraetetyp }}</td>
+                        <td style="padding: 12px;">{{ item.hersteller_modell }}</td>
+                        <td style="padding: 12px;"><code style="background: #fdf2f2; padding: 2px 5px; border-radius: 3px; color: #d63384;">{{ item.seriennummer }}</code></td>
+                        <td style="padding: 12px;">
+                            <span style="padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; 
+                                {% if item.status == 'Zugewiesen' %} background: #d1e7dd; color: #0f5132;
+                                {% elif item.status == 'Defekt' %} background: #f8d7da; color: #842029;
+                                {% else %} background: #e2e3e5; color: #41464b; {% endif %}">
+                                {{ item.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="padding: 40px; text-align: center; color: #999;">Keine Geräte im Inventar gefunden.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('inventorySearch');
-    const table = document.getElementById('inventoryTable');
-    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-
-    searchInput.addEventListener('keyup', function() {
-        const searchText = searchInput.value.toLowerCase();
-        for (let i = 0; i < rows.length; i++) {
-            const text = rows[i].textContent.toLowerCase();
-            if (rows[i].cells.length > 1) { 
-                rows[i].style.display = text.includes(searchText) ? "" : "none";
-            }
-        }
-    });
-});
-</script>
 {% endblock %}
