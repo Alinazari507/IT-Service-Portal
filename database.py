@@ -5,101 +5,90 @@ import os
 if not os.path.exists('data'):
     os.makedirs('data')
 
-# Datenbankpfad (Version 2 für saubere Synchronisation)
-DB_PATH = 'data/catalog_v2.db'
+# Datenbankpfad (Version 3 für endgültige Fehlerbehebung)
+DB_PATH = 'data/v3_final.db'
 
 def init_db():
-    """Initialisiert die Datenbanktabellen und erstellt den Standard-Admin."""
+    """Initialisiert alle Tabellen der Datenbank."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     # Tabelle für IT-Services
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS services (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            category TEXT,
-            availability TEXT,
-            description_business TEXT,
-            description_technical TEXT,
-            sla TEXT,
-            costs TEXT,
-            active INTEGER DEFAULT 1
-        )
-    ''')
+    c.execute('''CREATE TABLE IF NOT EXISTS services (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT, availability TEXT, 
+        description_business TEXT, description_technical TEXT, sla TEXT, costs TEXT, active INTEGER DEFAULT 1)''')
 
-    # Tabelle für Service-Anfragen (Tickets)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            service_id TEXT,
-            user_name TEXT,
-            user_dept TEXT,
-            status TEXT,
-            reason TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (service_id) REFERENCES services(id)
-        )
-    ''')
+    # Tabelle für Service-Anfragen
+    c.execute('''CREATE TABLE IF NOT EXISTS requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, service_id TEXT, user_name TEXT, 
+        user_dept TEXT, status TEXT, reason TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
 
     # Tabelle für Benutzer
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'user',
-            fullname TEXT,
-            department TEXT
-        )
-    ''')
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, 
+        password TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'user', fullname TEXT, department TEXT)''')
 
-    # Tabelle für IT-Inventory (CMDB)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS inventory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            asset_tag TEXT UNIQUE,
-            item_name TEXT,
-            serial_number TEXT,
-            assigned_to TEXT,
-            status TEXT,
-            location TEXT,
-            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
+    # Tabelle für IT-Inventory (CMDB) - Sicherstellen, dass sie existiert
+    c.execute('''CREATE TABLE IF NOT EXISTS inventory (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, asset_tag TEXT UNIQUE, item_name TEXT, 
+        serial_number TEXT, assigned_to TEXT, status TEXT, location TEXT, 
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     
-    # Standard-Admin erstellen, falls nicht vorhanden
+    # Standard-Admin erstellen
     c.execute("SELECT * FROM users WHERE username = 'admin'")
     if not c.fetchone():
-        secure_password = "Kein-Zugriff-fur-User-2026!"
-        c.execute('''
-            INSERT INTO users (username, password, role, fullname, department)
-            VALUES (?, ?, ?, ?, ?)
-        ''', ('admin', secure_password, 'admin', 'System Administrator', 'IT Management'))
+        c.execute("INSERT INTO users (username, password, role, fullname, department) VALUES (?, ?, ?, ?, ?)",
+                  ('admin', 'Kein-Zugriff-fur-User-2026!', 'admin', 'System Administrator', 'IT Management'))
 
     conn.commit()
     conn.close()
     seed_data()
 
 def seed_data():
-    """Füllt die Datenbank mit Standard-Services."""
+    """Füllt Standard-Daten in die Datenbank."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM services")
     if c.fetchone()[0] == 0:
         services = [
-            ('HW-001', 'Lenovo ThinkPad X1', 'Hardware', 'Sofort verfügbar', 
-             'Premium Business Notebook.', 'i7, 16GB RAM, 512GB SSD.', '3 Werktage', '0€'),
-            ('SW-002', 'Microsoft 365 Business', 'Software', '24h Aktivierung', 
-             'Office-Paket (Word, Excel, Teams).', 'Cloud-Lizenz.', '1 Werktag', '12,50€'),
-            ('ACC-003', 'VPN-Fernzugriff', 'Zugang', 'Sofort', 
-             'Sicherer Zugriff auf das Firmennetzwerk.', 'Cisco MFA.', '1 Stunde', '0€')
+            ('HW-001', 'Lenovo ThinkPad X1', 'Hardware', 'Sofort', 'Business Notebook', 'i7, 16GB', '3 Tage', '0€'),
+            ('SW-002', 'Microsoft 365', 'Software', '24h', 'Office Paket', 'Cloud', '1 Tag', '12,50€')
         ]
         c.executemany("INSERT INTO services (id, name, category, availability, description_business, description_technical, sla, costs, active) VALUES (?,?,?,?,?,?,?,?,1)", services)
         conn.commit()
     conn.close()
 
+def get_inventory():
+    """Sicheres Abrufen der Inventar-Daten. Erstellt Tabelle bei Bedarf."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id, asset_tag, item_name, serial_number, assigned_to, status, location FROM inventory ORDER BY asset_tag ASC")
+        rows = c.fetchall()
+        return [{'id': r[0], 'asset_tag': r[1], 'item_name': r[2], 'serial_number': r[3], 'assigned_to': r[4], 'status': r[5], 'location': r[6]} for r in rows]
+    except sqlite3.OperationalError:
+        # Falls die Tabelle 'inventory' fehlt, wird sie hier sofort erstellt
+        init_db()
+        return []
+    finally:
+        conn.close()
+
+def add_inventory_item(tag, name, sn, user, status, loc):
+    """Fügt ein neues Item zur CMDB hinzu."""
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        conn.execute("INSERT INTO inventory (asset_tag, item_name, serial_number, assigned_to, status, location) VALUES (?,?,?,?,?,?)", 
+                     (tag, name, sn, user, status, loc))
+        conn.commit()
+        return True
+    except:
+        return False
+    finally:
+        conn.close()
+
+# --- RESTLICHE FUNKTIONEN (unverändert für Kompatibilität) ---
+
 def get_services(category=None):
-    """Gibt alle aktiven Services zurück, optional nach Kategorie gefiltert."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     if category:
@@ -111,18 +100,14 @@ def get_services(category=None):
     return [{'id': r[0], 'name': r[1], 'category': r[2], 'availability': r[3], 'description_business': r[4], 'description_technical': r[5], 'sla': r[6], 'costs': r[7]} for r in rows]
 
 def get_service(service_id):
-    """Sucht einen spezifischen Service anhand der ID."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM services WHERE id=?", (service_id,))
     row = c.fetchone()
     conn.close()
-    if row:
-        return {'id': row[0], 'name': row[1], 'category': row[2], 'availability': row[3], 'description_business': row[4], 'description_technical': row[5], 'sla': row[6], 'costs': row[7]}
-    return None
+    return {'id': row[0], 'name': row[1], 'category': row[2], 'availability': row[3], 'description_business': row[4], 'description_technical': row[5], 'sla': row[6], 'costs': row[7]} if row else None
 
 def add_request(service_id, user_name, user_dept, reason=""):
-    """Erstellt eine neue Service-Anfrage."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("INSERT INTO requests (service_id, user_name, user_dept, status, reason) VALUES (?,?,?,?,?)", (service_id, user_name, user_dept, 'Pending', reason))
@@ -130,7 +115,6 @@ def add_request(service_id, user_name, user_dept, reason=""):
     conn.close()
 
 def get_requests(user_name=None):
-    """Gibt Anfragen zurück (alle oder für einen spezifischen User)."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     if user_name:
@@ -142,11 +126,9 @@ def get_requests(user_name=None):
     return [{'id': r[0], 'service_id': r[1], 'user_name': r[2], 'user_dept': r[3], 'status': r[4], 'reason': r[5], 'date': r[6]} for r in rows]
 
 def get_all_requests():
-    """Hilfsfunktion für den Admin-Export."""
     return get_requests()
 
 def update_request_status(request_id, new_status):
-    """Aktualisiert den Status eines Tickets."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("UPDATE requests SET status = ? WHERE id = ?", (new_status, request_id))
@@ -154,18 +136,14 @@ def update_request_status(request_id, new_status):
     conn.close()
 
 def get_user(username):
-    """Sucht einen Benutzer anhand des Usernamens."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM users WHERE username = ?", (username,))
     row = c.fetchone()
     conn.close()
-    if row:
-        return {'id': row[0], 'username': row[1], 'password': row[2], 'role': row[3], 'fullname': row[4], 'department': row[5]}
-    return None
+    return {'id': row[0], 'username': row[1], 'password': row[2], 'role': row[3], 'fullname': row[4], 'department': row[5]} if row else None
 
 def add_user(username, password, role='user', fullname='', department=''):
-    """Registriert einen neuen Benutzer."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("INSERT INTO users (username, password, role, fullname, department) VALUES (?, ?, ?, ?, ?)", (username, password, role, fullname, department))
@@ -173,52 +151,21 @@ def add_user(username, password, role='user', fullname='', department=''):
     conn.close()
 
 def add_service(service):
-    """Fügt einen neuen Service zum Katalog hinzu."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("INSERT INTO services (id, name, category, availability, description_business, description_technical, sla, costs) VALUES (?,?,?,?,?,?,?,?)", (service['id'], service['name'], service['category'], service['availability'], service['description_business'], service['description_technical'], service['sla'], service['costs']))
     conn.commit()
     conn.close()
 
-def get_inventory():
-    """Gibt alle Inventar-Gegenstände als Liste von Dictionaries zurück."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id, asset_tag, item_name, serial_number, assigned_to, status, location FROM inventory ORDER BY asset_tag ASC")
-    rows = c.fetchall()
-    conn.close()
-    # Wichtig: Rückgabe als Dictionary für Kompatibilität mit Jinja2 (item.asset_tag)
-    return [{'id': r[0], 'asset_tag': r[1], 'item_name': r[2], 'serial_number': r[3], 'assigned_to': r[4], 'status': r[5], 'location': r[6]} for r in rows]
-
-def add_inventory_item(tag, name, sn, user, status, loc):
-    """Fügt ein neues Gerät zur CMDB hinzu."""
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        conn.execute("INSERT INTO inventory (asset_tag, item_name, serial_number, assigned_to, status, location) VALUES (?,?,?,?,?,?)", (tag, name, sn, user, status, loc))
-        conn.commit()
-        return True
-    except sqlite3.Error:
-        return False
-    finally:
-        conn.close()
-
 def get_ticket_stats():
-    """Berechnet Statistiken für das Admin-Dashboard."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT status, COUNT(*) FROM requests GROUP BY status")
     stats = dict(c.fetchall())
     conn.close()
-    return {
-        'Pending': stats.get('Pending', 0),
-        'In Progress': stats.get('In Progress', 0),
-        'Completed': stats.get('Completed', 0),
-        'Approved': stats.get('Approved', 0),
-        'Rejected': stats.get('Rejected', 0)
-    }
+    return {'Pending': stats.get('Pending', 0), 'In Progress': stats.get('In Progress', 0), 'Completed': stats.get('Completed', 0), 'Approved': stats.get('Approved', 0), 'Rejected': stats.get('Rejected', 0)}
 
 def get_inventory_count():
-    """Gibt die Gesamtanzahl der Geräte im Inventar zurück."""
     conn = sqlite3.connect(DB_PATH)
     count = conn.execute("SELECT COUNT(*) FROM inventory").fetchone()[0]
     conn.close()
