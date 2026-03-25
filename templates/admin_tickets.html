@@ -1,0 +1,107 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">🛠️ IT Ticket-Management System</h2>
+        <a href="/admin" class="btn btn-secondary btn-sm">Zurück zum Dashboard</a>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <input type="text" id="ticketSearch" class="form-control" placeholder="Suche nach Mitarbeiter, Service oder ID...">
+                </div>
+                <div class="col-md-4">
+                    <select id="statusFilter" class="form-select">
+                        <option value="">Alle Status anzeigen</option>
+                        <option value="Wartend">Wartend</option>
+                        <option value="In Bearbeitung">In Bearbeitung</option>
+                        <option value="Abgeschlossen">Abgeschlossen</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 bg-white" id="ticketTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Mitarbeiter</th>
+                        <th>Service</th>
+                        <th>Abteilung</th>
+                        <th>Status</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td>#{{ ticket.id }}</td>
+                        <td><strong>{{ ticket.user_name }}</strong></td>
+                        <td>{{ ticket.service_id }}</td>
+                        <td>{{ ticket.user_dept }}</td>
+                        <td>
+                            {% if ticket.status == 'Pending' %}
+                                <span class="badge bg-warning text-dark status-text">Wartend</span>
+                            {% elif ticket.status == 'In Progress' %}
+                                <span class="badge bg-info status-text">In Bearbeitung</span>
+                            {% elif ticket.status == 'Completed' %}
+                                <span class="badge bg-success status-text">Abgeschlossen</span>
+                            {% else %}
+                                <span class="badge bg-danger status-text">{{ ticket.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="/admin/update_status/{{ ticket.id }}/In Progress" class="btn btn-sm btn-outline-info">Bearbeiten</a>
+                                <a href="/admin/update_status/{{ ticket.id }}/Completed" class="btn btn-sm btn-outline-success">Abschließen</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">Keine aktiven Tickets vorhanden.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('ticketSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const table = document.getElementById('ticketTable');
+    const rows = table.getElementsByTagName('tr');
+
+    function filterTable() {
+        const searchText = searchInput.value.toLowerCase();
+        const filterStatus = statusFilter.value;
+
+        for (let i = 1; i < rows.length; i++) { // Überspringe Header
+            const row = rows[i];
+            const text = row.textContent.toLowerCase();
+            const statusBadge = row.querySelector('.status-text');
+            const statusMatch = filterStatus === "" || (statusBadge && statusBadge.textContent === filterStatus);
+            const searchMatch = text.includes(searchText);
+
+            if (statusMatch && searchMatch) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        }
+    }
+
+    searchInput.addEventListener('keyup', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+});
+</script>
+{% endblock %}

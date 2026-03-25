@@ -27,7 +27,7 @@ def init_db():
         )
     ''')
 
-    # Tabelle für Service-Anfragen
+    # Tabelle für Service-Anfragen (Tickets)
     c.execute('''
         CREATE TABLE IF NOT EXISTS requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,8 +52,22 @@ def init_db():
             department TEXT
         )
     ''')
+
+    # Tabelle für IT-Inventory (CMDB)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS inventory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_tag TEXT UNIQUE,
+            item_name TEXT,
+            serial_number TEXT,
+            assigned_to TEXT,
+            status TEXT,
+            location TEXT,
+            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     
-    # ادمین پیش‌فرض
+    # Standard-Admin erstellen, falls nicht vorhanden
     c.execute("SELECT * FROM users WHERE username = 'admin'")
     if not c.fetchone():
         secure_password = "Kein-Zugriff-fur-User-2026!"
@@ -65,7 +79,7 @@ def init_db():
     conn.commit()
     conn.close()
     
-    # پر کردن خودکار سرویس‌ها در صورت خالی بودن
+    # Standard-Services hinzufügen
     seed_data()
 
 def seed_data():
@@ -120,7 +134,7 @@ def get_services(category=None):
     return services
 
 def get_service(service_id):
-    """Sucht einen einzelnen Service."""
+    """Sucht einen einzelnen Service nach ID."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM services WHERE id=?", (service_id,))
@@ -135,7 +149,7 @@ def get_service(service_id):
     return None
 
 def add_request(service_id, user_name, user_dept, reason=""):
-    """Speichert eine neue Anfrage."""
+    """Speichert eine neue Service-Anfrage."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
@@ -146,7 +160,7 @@ def add_request(service_id, user_name, user_dept, reason=""):
     conn.close()
 
 def get_requests(user_name=None):
-    """Ruft Anfragen für einen Benutzer ab."""
+    """Ruft Anfragen für einen bestimmten Benutzer oder alle ab."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     if user_name:
@@ -165,7 +179,7 @@ def get_requests(user_name=None):
     return requests_list
 
 def add_service(service):
-    """Fügt einen neuen Service hinzu (Admin)."""
+    """Fügt einen neuen Service hinzu (Admin-Funktion)."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
@@ -177,7 +191,7 @@ def add_service(service):
     conn.close()
 
 def get_user(username):
-    """Sucht einen Benutzer."""
+    """Sucht einen Benutzer anhand des Benutzernamens."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM users WHERE username = ?", (username,))
@@ -188,7 +202,7 @@ def get_user(username):
     return None
 
 def add_user(username, password, role='user', fullname='', department=''):
-    """Registriert einen neuen Benutzer."""
+    """Registriert einen neuen Benutzer in der Datenbank."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("INSERT INTO users (username, password, role, fullname, department) VALUES (?, ?, ?, ?, ?)", 
@@ -197,13 +211,68 @@ def add_user(username, password, role='user', fullname='', department=''):
     conn.close()
 
 def get_all_requests():
-    """Gibt alle Anfragen für Admin-Panel zurück."""
+    """Hilfsfunktion: Gibt alle Anfragen für das Admin-Panel zurück."""
     return get_requests(user_name=None)
 
 def update_request_status(request_id, new_status):
-    """Aktualisiert Status einer Anfrage."""
+    """Aktualisiert den Status einer bestehenden Anfrage."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("UPDATE requests SET status = ? WHERE id = ?", (new_status, request_id))
     conn.commit()
     conn.close()
+
+# --- Funktionen für CMDB (Inventory) ---
+
+def get_inventory():
+    """Ruft die gesamte Inventarliste ab."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT * FROM inventory ORDER BY asset_tag ASC")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def add_inventory_item(tag, name, sn, user, status, loc):
+    """Fügt ein neues Gerät zum IT-Inventar hinzu."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    try:
+        c.execute('''
+            INSERT INTO inventory (asset_tag, item_name, serial_number, assigned_to, status, location)
+            VALUES (?,?,?,?,?,?)
+        ''', (tag, name, sn, user, status, loc))
+        conn.commit()
+        success = True
+    except sqlite3.IntegrityError:
+        success = False # Falls Asset Tag doppelt vergeben wird
+    conn.close()
+    return success
+
+# --- Funktionen für Dashboard-Statistiken ---
+
+def get_ticket_stats():
+    """Berechnet die Anzahl der Tickets pro Status für das Dashboard."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    c.execute("SELECT status, COUNT(*) FROM requests GROUP BY status")
+    stats = dict(c.fetchall())
+    
+    # Sicherstellen, dass alle Status-Keys vorhanden sind
+    result = {
+        'Pending': stats.get('Pending', 0),
+        'In Progress': stats.get('In Progress', 0),
+        'Completed': stats.get('Completed', 0)
+    }
+    conn.close()
+    return result
+
+def get_inventory_count():
+    """Gibt die Gesamtanzahl der registrierten Geräte zurück."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM inventory")
+    count = c.fetchone()[0]
+    conn.close()
+    return count
