@@ -1,15 +1,15 @@
 import sqlite3
 import os
 
-# Erstellt den Ordner 'data', falls er nicht existiert
+# Verzeichnis für die Datenbank erstellen
 if not os.path.exists('data'):
     os.makedirs('data')
 
-# Datenbankpfad (Version 3 für endgültige Fehlerbehebung)
-DB_PATH = 'data/v3_final.db'
+# Datenbankpfad - Version 7 (Fix: Quoted correctly)
+DB_PATH = 'data/v7_final_stable.db'
 
 def init_db():
-    """Initialisiert alle Tabellen der Datenbank."""
+    """Initialisiert die Datenbank mit der neuen CMDB-Struktur."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
@@ -18,7 +18,7 @@ def init_db():
         id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT, availability TEXT, 
         description_business TEXT, description_technical TEXT, sla TEXT, costs TEXT, active INTEGER DEFAULT 1)''')
 
-    # Tabelle für Service-Anfragen
+    # Tabelle für Service-Anfragen (Tickets)
     c.execute('''CREATE TABLE IF NOT EXISTS requests (
         id INTEGER PRIMARY KEY AUTOINCREMENT, service_id TEXT, user_name TEXT, 
         user_dept TEXT, status TEXT, reason TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
@@ -28,10 +28,18 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, 
         password TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'user', fullname TEXT, department TEXT)''')
 
-    # Tabelle für IT-Inventory (CMDB) - Sicherstellen, dass sie existiert
+    # Die neue Inventar-Tabelle
     c.execute('''CREATE TABLE IF NOT EXISTS inventory (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, asset_tag TEXT UNIQUE, item_name TEXT, 
-        serial_number TEXT, assigned_to TEXT, status TEXT, location TEXT, 
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        asset_tag TEXT UNIQUE,
+        geraetetyp TEXT,
+        hersteller_modell TEXT,
+        seriennummer TEXT,
+        kaufdatum TEXT,
+        status TEXT,
+        nutzer_standort TEXT,
+        garantie_bis TEXT,
+        lizenz_bis TEXT,
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     
     # Standard-Admin erstellen
@@ -45,48 +53,51 @@ def init_db():
     seed_data()
 
 def seed_data():
-    """Füllt Standard-Daten in die Datenbank."""
+    """Füllt Basis-Services in die Datenbank."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM services")
     if c.fetchone()[0] == 0:
         services = [
-            ('HW-001', 'Lenovo ThinkPad X1', 'Hardware', 'Sofort', 'Business Notebook', 'i7, 16GB', '3 Tage', '0€'),
-            ('SW-002', 'Microsoft 365', 'Software', '24h', 'Office Paket', 'Cloud', '1 Tag', '12,50€')
+            ('HW-001', 'Standard Laptop', 'Hardware', 'Sofort', 'Business Gerät', 'i5, 16GB RAM', '3 Tage', '0€'),
+            ('SW-001', 'Adobe Acrobat', 'Software', '24h', 'PDF Editor', 'Pro Version', '1 Tag', '15€')
         ]
         c.executemany("INSERT INTO services (id, name, category, availability, description_business, description_technical, sla, costs, active) VALUES (?,?,?,?,?,?,?,?,1)", services)
         conn.commit()
     conn.close()
 
 def get_inventory():
-    """Sicheres Abrufen der Inventar-Daten. Erstellt Tabelle bei Bedarf."""
+    """Gibt das gesamte Inventar als Liste von Dictionaries zurück."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
-        c.execute("SELECT id, asset_tag, item_name, serial_number, assigned_to, status, location FROM inventory ORDER BY asset_tag ASC")
+        c.execute("SELECT id, asset_tag, geraetetyp, hersteller_modell, seriennummer, kaufdatum, status, nutzer_standort, garantie_bis, lizenz_bis FROM inventory")
         rows = c.fetchall()
-        return [{'id': r[0], 'asset_tag': r[1], 'item_name': r[2], 'serial_number': r[3], 'assigned_to': r[4], 'status': r[5], 'location': r[6]} for r in rows]
-    except sqlite3.OperationalError:
-        # Falls die Tabelle 'inventory' fehlt, wird sie hier sofort erstellt
-        init_db()
+        return [{'id': r[0], 'asset_tag': r[1], 'geraetetyp': r[2], 'hersteller_modell': r[3], 
+                 'seriennummer': r[4], 'kaufdatum': r[5], 'status': r[6], 
+                 'nutzer_standort': r[7], 'garantie_bis': r[8], 'lizenz_bis': r[9]} for r in rows]
+    except:
         return []
     finally:
         conn.close()
 
-def add_inventory_item(tag, name, sn, user, status, loc):
-    """Fügt ein neues Item zur CMDB hinzu."""
+def add_inventory_item(data):
+    """Fügt ein neues Item basierend auf dem Dictionary aus app.py hinzu."""
     conn = sqlite3.connect(DB_PATH)
     try:
-        conn.execute("INSERT INTO inventory (asset_tag, item_name, serial_number, assigned_to, status, location) VALUES (?,?,?,?,?,?)", 
-                     (tag, name, sn, user, status, loc))
+        c = conn.cursor()
+        c.execute('''INSERT INTO inventory 
+            (asset_tag, geraetetyp, hersteller_modell, seriennummer, kaufdatum, status, nutzer_standort, garantie_bis, lizenz_bis) 
+            VALUES (?,?,?,?,?,?,?,?,?)''', 
+            (data['asset_tag'], data['geraetetyp'], data['hersteller_modell'], 
+             data['seriennummer'], data['kaufdatum'], data['status'], 
+             data['nutzer_standort'], data['garantie_bis'], data['lizenz_bis']))
         conn.commit()
         return True
     except:
         return False
     finally:
         conn.close()
-
-# --- RESTLICHE FUNKTIONEN (unverändert für Kompatibilität) ---
 
 def get_services(category=None):
     conn = sqlite3.connect(DB_PATH)
@@ -128,10 +139,13 @@ def get_requests(user_name=None):
 def get_all_requests():
     return get_requests()
 
-def update_request_status(request_id, new_status):
+def update_request_status(request_id, new_status, admin_note=""):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("UPDATE requests SET status = ? WHERE id = ?", (new_status, request_id))
+    if admin_note:
+        c.execute("UPDATE requests SET status = ?, reason = ? WHERE id = ?", (new_status, admin_note, request_id))
+    else:
+        c.execute("UPDATE requests SET status = ? WHERE id = ?", (new_status, request_id))
     conn.commit()
     conn.close()
 
@@ -150,10 +164,11 @@ def add_user(username, password, role='user', fullname='', department=''):
     conn.commit()
     conn.close()
 
-def add_service(service):
+def add_service(s):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO services (id, name, category, availability, description_business, description_technical, sla, costs) VALUES (?,?,?,?,?,?,?,?)", (service['id'], service['name'], service['category'], service['availability'], service['description_business'], service['description_technical'], service['sla'], service['costs']))
+    c.execute("INSERT INTO services (id, name, category, availability, description_business, description_technical, sla, costs) VALUES (?,?,?,?,?,?,?,?)", 
+              (s['id'], s['name'], s['category'], s['availability'], s['description_business'], s['description_technical'], s['sla'], s['costs']))
     conn.commit()
     conn.close()
 
