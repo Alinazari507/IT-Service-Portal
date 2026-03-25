@@ -44,8 +44,7 @@ def login():
         password = request.form['password']
         user_data = database.get_user(username)
         if user_data and user_data['password'] == password:
-            user = User(user_data['id'], user_data['username'], user_data['role'],
-                        user_data['fullname'], user_data['department'])
+            user = User(user_data['id'], user_data['username'], user_data['role'], user_data['fullname'], user_data['department'])
             login_user(user)
             return redirect(url_for('index'))
         flash('Ungültiger Benutzername oder Passwort')
@@ -119,7 +118,6 @@ def admin_panel():
 def admin_update_request(request_id):
     if current_user.role == 'admin':
         new_status = request.form['status']
-        # Ermöglicht Admin-Notizen beim Status-Update (z.B. "Bestellung initiiert")
         admin_note = request.form.get('reason', '') 
         database.update_request_status(request_id, new_status, admin_note)
         flash('Status aktualisiert.')
@@ -130,9 +128,7 @@ def admin_update_request(request_id):
 def admin_cmdb():
     if current_user.role != 'admin':
         return redirect(url_for('index'))
-    
     if request.method == 'POST':
-        # Erfasst alle 9 Felder aus Ihrem neuen CMDB-Design
         inventory_data = {
             'asset_tag': request.form['asset_tag'],
             'geraetetyp': request.form['geraetetyp'],
@@ -150,25 +146,19 @@ def admin_cmdb():
         else:
             flash('Fehler: Asset-Tag bereits vorhanden.')
         return redirect(url_for('admin_cmdb'))
-    
     items = database.get_inventory()
     return render_template('cmdb.html', items=items)
 
 @app.route('/admin/add_service', methods=['GET', 'POST'])
 @login_required
-def add_service_form():
+def add_service_form(): # Dieser Name muss mit url_for in templates übereinstimmen
     if current_user.role != 'admin':
         return redirect(url_for('index'))
     if request.method == 'POST':
         service_data = {
-            'id': request.form['id'],
-            'name': request.form['name'],
-            'category': request.form['category'],
-            'availability': request.form['availability'],
-            'description_business': request.form['description_business'],
-            'description_technical': request.form['description_technical'],
-            'sla': request.form['sla'],
-            'costs': request.form['costs']
+            'id': request.form['id'], 'name': request.form['name'], 'category': request.form['category'],
+            'availability': request.form['availability'], 'description_business': request.form['description_business'],
+            'description_technical': request.form['description_technical'], 'sla': request.form['sla'], 'costs': request.form['costs']
         }
         database.add_service(service_data)
         flash('Service hinzugefügt.')
@@ -184,15 +174,13 @@ def export_tickets_excel():
     if not tickets:
         flash("Keine Daten vorhanden.")
         return redirect(url_for('admin_panel'))
-    
     try:
         df = pd.DataFrame(tickets)
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='IT_Tickets')
         output.seek(0)
-        return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                         as_attachment=True, download_name='IT_Report_2026.xlsx')
+        return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name='IT_Report_2026.xlsx')
     except Exception as e:
         flash(f"Export-Fehler: {str(e)}")
         return redirect(url_for('admin_panel'))
