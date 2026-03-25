@@ -2,106 +2,93 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>IT Service Portal</title>
+    <title>IT-Asset Management (CMDB)</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>✨ Mein IT-Service-Portal</h1>
-            <small>Ihr persönlicher Zugang zu allen IT-Services – schnell, transparent, zuverlässig</small>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-dark">🖥️ IT-Asset Management (CMDB)</h2>
+            <a href="/admin" class="btn btn-outline-secondary">Zurück zum Dashboard</a>
         </div>
 
-        <div class="user-info">
-            <strong>👤 Angemeldet als:</strong> {{ user.fullname }}<br>
-            <strong>🏢 Abteilung:</strong> {{ user.department }}
-        </div>
-
-        <h2>🌟 Willkommen im Service-Portal, {{ user.fullname }}!<br>Wie kann ich Ihnen heute helfen?</h2>
-
-        <div class="categories">
-            <h3>Kategorien</h3>
-            <ul style="list-style: none; padding: 0; display: flex; gap: 10px;">
-                <li><a href="{{ url_for('index', category='Hardware') }}" class="btn-small">Hardware</a></li>
-                <li><a href="{{ url_for('index', category='Software') }}" class="btn-small">Software</a></li>
-                <li><a href="{{ url_for('index', category='Zugang') }}" class="btn-small">Zugang & Berechtigungen</a></li>
-                <li><a href="{{ url_for('index', category='Support') }}" class="btn-small">Support</a></li>
-                <li><a href="{{ url_for('index') }}" class="btn-small">Alle</a></li>
-            </ul>
-        </div>
-
-        {% for service in services %}
-        <div class="service-card" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
-            <div class="service-info">
-                <div class="service-name" style="font-size: 1.2em; font-weight: bold; color: #0056b3;">{{ service.name }}</div>
-                <div class="service-meta">Ref-ID: {{ service.id }} | Verfügbarkeit: {{ service.availability }}</div>
-                
-                <div class="business-view" style="margin-top: 10px;">
-                    <strong>📋 Business-Beschreibung:</strong> {{ service.description_business }}
-                </div>
-
-                <button class="btn-secondary" onclick="toggleTechnical('tech-{{ service.id }}')" style="margin-top: 5px;">🔍 Technische Details</button>
-                
-                <div id="tech-{{ service.id }}" class="technical-view" style="display:none; background: #f9f9f9; padding: 10px; margin-top: 5px;">
-                    <strong>⚙️ Technische Sicht:</strong> {{ service.description_technical }}
-                </div>
-
-                {% if service.sla %}
-                <div class="sla" style="color: green; font-size: 0.9em;">⏱️ SLA: {{ service.sla }}</div>
-                {% endif %}
-                
-                {% if service.costs %}
-                <div class="costs" style="color: #d9534f; font-weight: bold;">💰 Kosten: {{ service.costs }}</div>
-                {% endif %}
+        <div class="card shadow-sm mb-5 border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0">Neues Gerät registrieren</h5>
             </div>
-
-            <div style="margin-top: 15px;">
-                <a href="{{ url_for('show_request_form', service_id=service.id) }}" class="btn-primary" 
-                   style="text-decoration: none; background-color: #28a745; color: white; padding: 10px 20px; border-radius: 5px; display: inline-block;">
-                    📦 Jetzt anfordern
-                </a>
-            </div>
-        </div>
-        {% else %}
-        <div style="text-align: center; padding: 40px; color: #999;">
-            Keine Services gefunden. Bitte fügen Sie Services über das Admin-Panel hinzu.
-        </div>
-        {% endfor %}
-
-        <div class="two-columns" style="display: flex; gap: 20px; margin-top: 30px;">
-            <div class="column">
-                <h3>📋 Service-Katalog (für Mitarbeiter)</h3>
-                <p>Wählen Sie einen Service aus und fordern Sie ihn direkt an.</p>
-            </div>
-            <div class="column">
-                <h3>⚙️ IT-Administration (CMDB)</h3>
-                <p>Interne Übersicht für Administratoren.</p>
+            <div class="card-body p-4">
+                <form action="/admin/cmdb" method="post" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Asset Tag</label>
+                        <input type="text" name="asset_tag" class="form-control" placeholder="HW-001" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Gerätetyp</label>
+                        <input type="text" name="geraetetyp" class="form-control" placeholder="Laptop..." required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Modell</label>
+                        <input type="text" name="hersteller_modell" class="form-control" placeholder="HP EliteBook..." required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Seriennummer</label>
+                        <input type="text" name="seriennummer" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Nutzer / Standort</label>
+                        <input type="text" name="nutzer_standort" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="Im Lager">Im Lager</option>
+                            <option value="Zugewiesen">Zugewiesen</option>
+                            <option value="Defekt">Defekt</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-100 fw-bold">Asset speichern</button>
+                    </div>
+                    <input type="hidden" name="kaufdatum" value="">
+                    <input type="hidden" name="garantie_bis" value="">
+                    <input type="hidden" name="lizenz_bis" value="-">
+                </form>
             </div>
         </div>
 
-        <div class="admin-link" style="margin-top: 20px; text-align: center;">
-            {% if user.role == 'admin' %}
-                <a href="{{ url_for('admin_panel') }}">🛠️ Admin-Panel</a> |
-                <a href="{{ url_for('add_service_form') }}">➕ Neuen Service anlegen</a> |
-            {% endif %}
-            <a href="{{ url_for('requests_list') }}">📋 Meine Anfragen</a> |
-            <a href="{{ url_for('logout') }}" style="color: red;">🚪 Abmelden</a>
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Asset Tag</th>
+                            <th>Typ</th>
+                            <th>Modell</th>
+                            <th>S/N</th>
+                            <th>Nutzer/Standort</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td class="fw-bold">{{ item.asset_tag }}</td>
+                            <td>{{ item.geraetetyp }}</td>
+                            <td>{{ item.hersteller_modell }}</td>
+                            <td><code>{{ item.seriennummer }}</code></td>
+                            <td>{{ item.nutzer_standort }}</td>
+                            <td><span class="badge bg-info text-dark">{{ item.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">Keine Daten vorhanden.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-
-        <footer style="margin-top: 40px; text-align: center; font-size: 0.8em; color: #777;">
-            &copy; 2026 IT Service Portal – Transparente IT-Leistungen
-        </footer>
     </div>
-
-    <script>
-        function toggleTechnical(id) {
-            var elem = document.getElementById(id);
-            if (elem.style.display === "none") {
-                elem.style.display = "block";
-            } else {
-                elem.style.display = "none";
-            }
-        }
-    </script>
 </body>
 </html>
