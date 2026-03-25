@@ -5,38 +5,15 @@
     <title>Admin-Panel | IT Service Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: bold;
-        }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
         .status-pending { background: #ffc107; color: #856404; }
         .status-approved { background: #28a745; color: white; }
         .status-rejected { background: #dc3545; color: white; }
         .status-progress { background: #17a2b8; color: white; } 
         
-        .admin-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            margin-top: 20px;
-        }
-
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            padding: 20px;
-            border-radius: 12px;
-            color: white;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
+        .admin-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: 20px; }
+        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { padding: 20px; border-radius: 12px; color: white; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         .bg-pending { background: #f39c12; }
         .bg-progress { background: #3498db; }
         .bg-completed { background: #27ae60; }
@@ -49,21 +26,8 @@
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: #f8f9fa; }
 
-        /* Style für den Excel-Button */
-        .btn-excel {
-            background-color: #1d6f42;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            display: inline-block;
-            font-weight: bold;
-            margin-bottom: 20px;
-            transition: background 0.3s;
-        }
-        .btn-excel:hover {
-            background-color: #145532;
-        }
+        .btn-excel { background-color: #1d6f42; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: bold; margin-bottom: 20px; transition: background 0.3s; border: none; cursor: pointer; }
+        .btn-excel:hover { background-color: #145532; }
     </style>
 </head>
 <body>
@@ -73,27 +37,35 @@
             <p>Zentrale Übersicht und Statistik-Auswertung</p>
         </header>
 
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-info" style="background:#d1ecf1; padding:10px; border-radius:5px; margin-bottom:10px;">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
         <div class="stats-container">
             <div class="stat-card bg-pending">
                 <p>Offene Anfragen</p>
-                <h2>{{ stats['Pending'] }}</h2>
+                <h2>{{ stats['Pending'] if stats else 0 }}</h2>
             </div>
             <div class="stat-card bg-progress">
                 <p>In Bearbeitung</p>
-                <h2>{{ stats['In Progress'] }}</h2>
+                <h2>{{ stats['In Progress'] if stats else 0 }}</h2>
             </div>
             <div class="stat-card bg-completed">
                 <p>Abgeschlossen</p>
-                <h2>{{ stats['Completed'] }}</h2>
+                <h2>{{ stats['Completed'] if stats else 0 }}</h2>
             </div>
             <div class="stat-card bg-inventory">
                 <p>Inventar-Geräte (CMDB)</p>
-                <h2>{{ inv_count }}</h2>
+                <h2>{{ inv_count if inv_count else 0 }}</h2>
             </div>
         </div>
 
         <div style="text-align: right;">
-            <a href="/admin/export/tickets" class="btn-excel">
+            <a href="{{ url_for('export_tickets_excel') }}" class="btn-excel">
                 📊 Excel-Bericht herunterladen
             </a>
         </div>
@@ -107,7 +79,6 @@
                         <th>Benutzer</th>
                         <th>Abteilung</th>
                         <th>Service</th>
-                        <th>Grund</th>
                         <th>Status</th>
                         <th>Aktion</th>
                     </tr>
@@ -118,8 +89,7 @@
                         <td>#{{ req.id }}</td>
                         <td><strong>{{ req.user_name }}</strong></td>
                         <td>{{ req.user_dept }}</td>
-                        <td><span class="badge" style="background:#eee; padding:3px 7px;">{{ req.service_id }}</span></td>
-                        <td><small>{{ req.reason }}</small></td>
+                        <td>{{ req.service_id }}</td>
                         <td>
                             <span class="status-badge 
                                 {% if req.status == 'Pending' %}status-pending
@@ -130,11 +100,11 @@
                             </span>
                         </td>
                         <td>
-                            <form action="{{ url_for('admin_update_request', request_id=req.id) }}" method="post" style="display:inline;">
-                                <select name="status" onchange="this.form.submit()" style="padding: 5px; border-radius: 5px;">
+                            <form action="{{ url_for('admin_update_request', request_id=req.id) }}" method="post">
+                                <select name="status" onchange="this.form.submit()">
                                     <option value="Pending" {% if req.status == 'Pending' %}selected{% endif %}>Warten</option>
                                     <option value="In Progress" {% if req.status == 'In Progress' %}selected{% endif %}>Bearbeiten</option>
-                                    <option value="Approved" {% if req.status == 'Approved' or req.status == 'Completed' %}selected{% endif %}>Abschließen</option>
+                                    <option value="Completed" {% if req.status == 'Completed' %}selected{% endif %}>Abschließen</option>
                                     <option value="Rejected" {% if req.status == 'Rejected' %}selected{% endif %}>Ablehnen</option>
                                 </select>
                             </form>
@@ -142,16 +112,14 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 30px; color: #999;">
-                            Noch keine Anfragen im System.
-                        </td>
+                        <td colspan="6" style="text-align: center; padding: 20px;">Keine Anfragen gefunden.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <div class="admin-link" style="text-align: center; margin-top: 30px; padding: 20px; border-top: 1px solid #ddd;">
+        <div class="admin-link" style="text-align: center; margin-top: 30px; padding: 20px;">
             <a href="{{ url_for('index') }}" class="btn-secondary">← Zurück zum Katalog</a> |
             <a href="{{ url_for('add_service_form') }}" class="btn-primary">➕ Neuen Service anlegen</a> |
             <a href="{{ url_for('admin_cmdb') }}" class="btn-dark">🖥️ Inventar (CMDB) öffnen</a>

@@ -1,6 +1,14 @@
-venv/
+# Python bytecode
 __pycache__/
-*.pyc
-data/*.db
+*.py[cod]
+
+# Environments
+venv/
+env/
 .env
+
+# Database
+data/*.db
+
+# OS files
 .DS_Store
