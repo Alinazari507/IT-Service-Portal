@@ -4,7 +4,7 @@ import os
 if not os.path.exists('data'):
     os.makedirs('data')
 
-DB_PATH = 'data/catalog.db'
+DB_PATH = 'data/catalog_v2.db'
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
