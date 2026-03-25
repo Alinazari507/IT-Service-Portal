@@ -19,16 +19,26 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    conn = sqlite3.connect(database.DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id, username, role, fullname, department FROM users WHERE id=?", (user_id,))
-    row = c.fetchone()
-    conn.close()
-    if row:
-        return User(row[0], row[1], row[2], row[3], row[4])
+    """Lädt den Benutzer aus der Datenbank für Flask-Login."""
+    try:
+        conn = sqlite3.connect(database.DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT id, username, role, fullname, department FROM users WHERE id=?", (user_id,))
+        row = c.fetchone()
+        conn.close()
+        if row:
+            return User(row[0], row[1], row[2], row[3], row[4])
+    except:
+        return None
     return None
 
+# Initialisiert die Datenbank beim Start
 database.init_db()
+
+@app.route('/health')
+def health_check():
+    """Health Check für Render Auto-Deploy."""
+    return "OK", 200
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -54,9 +64,10 @@ def register():
         if database.get_user(username):
             flash('Benutzername existiert bereits.')
             return redirect(url_for('register'))
+        # Erster User oder 'admin' wird Admin
         role = 'admin' if username.lower() == 'admin' else 'user'
         database.add_user(username, password, role, fullname, department)
-        flash('Registrierung erfolgreich.')
+        flash('Registrierung erfolgreich. Bitte einloggen.')
         return redirect(url_for('login'))
     return render_template('register.html')
 
@@ -84,8 +95,9 @@ def show_request_form(service_id):
 def request_service():
     service_id = request.form['service_id']
     reason = request.form.get('reason', '')
+    # Nutzt fullname des aktuellen Users für das Ticket
     database.add_request(service_id, current_user.fullname, current_user.department, reason)
-    flash('Ihre Anfrage wurde gesendet.')
+    flash('Ihre Anfrage wurde erfolgreich gesendet.')
     return redirect(url_for('requests_list'))
 
 @app.route('/requests')
@@ -105,7 +117,7 @@ def admin_panel():
         requests_all = database.get_all_requests()
         return render_template('admin.html', requests=requests_all, stats=stats, inv_count=inv_count)
     except Exception as e:
-        return f"Error loading Admin Panel: {str(e)}", 500
+        return f"Fehler im Admin-Bereich: {str(e)}", 500
 
 @app.route('/admin/update/<int:request_id>', methods=['POST'])
 @login_required
@@ -121,41 +133,25 @@ def admin_cmdb():
     if current_user.role != 'admin':
         return redirect(url_for('index'))
     if request.method == 'POST':
-        database.add_inventory_item(
+        success = database.add_inventory_item(
             request.form['asset_tag'], request.form['item_name'],
             request.form['serial_number'], request.form['assigned_to'],
             request.form['status'], request.form['location']
         )
-        flash('Inventar aktualisiert.')
+        if success:
+            flash('Inventar erfolgreich aktualisiert.')
+        else:
+            flash('Fehler: Asset Tag existiert bereits!')
+        return redirect(url_for('admin_cmdb'))
+    
     items = database.get_inventory()
     return render_template('cmdb.html', items=items)
 
-@app.route('/admin/export/tickets')
-@login_required
-def export_tickets_excel():
-    if current_user.role != 'admin':
-        return "Zugriff verweigert", 403
-    tickets = database.get_all_requests()
-    if not tickets:
-        flash("Keine Daten vorhanden.")
-        return redirect(url_for('admin_panel'))
-    
-    df = pd.DataFrame(tickets)
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Tickets')
-    output.seek(0)
-    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                     as_attachment=True, download_name='IT_Report.xlsx')
-@app.route('/health')
-def health_check():
-    return "OK", 200    
 @app.route('/admin/add_service', methods=['GET', 'POST'])
 @login_required
 def add_service_form():
     if current_user.role != 'admin':
         return redirect(url_for('index'))
-    
     if request.method == 'POST':
         service_data = {
             'id': request.form['id'],
@@ -168,10 +164,33 @@ def add_service_form():
             'costs': request.form['costs']
         }
         database.add_service(service_data)
-        flash('Service erfolgreich hinzugefügt.')
+        flash('Service erfolgreich zum Katalog hinzugefügt.')
         return redirect(url_for('index'))
-    
     return render_template('add_service.html')
 
+@app.route('/admin/export/tickets')
+@login_required
+def export_tickets_excel():
+    if current_user.role != 'admin':
+        return "Zugriff verweigert", 403
+    tickets = database.get_all_requests()
+    if not tickets:
+        flash("Keine Daten zum Exportieren vorhanden.")
+        return redirect(url_for('admin_panel'))
+    
+    try:
+        df = pd.DataFrame(tickets)
+        output = io.BytesIO()
+        # Verwendet openpyxl für modernen Excel-Export
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='IT_Tickets')
+        output.seek(0)
+        return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                         as_attachment=True, download_name='IT_Service_Report_2026.xlsx')
+    except Exception as e:
+        flash(f"Excel-Export fehlgeschlagen: {str(e)}")
+        return redirect(url_for('admin_panel'))
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Lokal auf Port 5000 ausführen
+    app.run(host='0.0.0.0', port=5000, debug=True)
