@@ -150,6 +150,28 @@ def export_tickets_excel():
 @app.route('/health')
 def health_check():
     return "OK", 200    
+@app.route('/admin/add_service', methods=['GET', 'POST'])
+@login_required
+def add_service_form():
+    if current_user.role != 'admin':
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        service_data = {
+            'id': request.form['id'],
+            'name': request.form['name'],
+            'category': request.form['category'],
+            'availability': request.form['availability'],
+            'description_business': request.form['description_business'],
+            'description_technical': request.form['description_technical'],
+            'sla': request.form['sla'],
+            'costs': request.form['costs']
+        }
+        database.add_service(service_data)
+        flash('Service erfolgreich hinzugefügt.')
+        return redirect(url_for('index'))
+    
+    return render_template('add_service.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
