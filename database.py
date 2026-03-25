@@ -86,7 +86,7 @@ def seed_data():
             ('ACC-003', 'VPN-Fernzugriff', 'Zugang', 'Sofort', 
              'Sicherer Zugriff auf das Firmennetzwerk.', 'Cisco MFA.', '1 Stunde', '0€')
         ]
-        c.executemany("INSERT INTO services VALUES (?,?,?,?,?,?,?,?,1)", services)
+        c.executemany("INSERT INTO services (id, name, category, availability, description_business, description_technical, sla, costs, active) VALUES (?,?,?,?,?,?,?,?,1)", services)
         conn.commit()
     conn.close()
 
@@ -107,7 +107,9 @@ def get_service(service_id):
     c.execute("SELECT * FROM services WHERE id=?", (service_id,))
     row = c.fetchone()
     conn.close()
-    return {'id': row[0], 'name': row[1], 'category': row[2], 'availability': row[3], 'description_business': row[4], 'description_technical': row[5], 'sla': row[6], 'costs': row[7]} if row else None
+    if row:
+        return {'id': row[0], 'name': row[1], 'category': row[2], 'availability': row[3], 'description_business': row[4], 'description_technical': row[5], 'sla': row[6], 'costs': row[7]}
+    return None
 
 def add_request(service_id, user_name, user_dept, reason=""):
     conn = sqlite3.connect(DB_PATH)
@@ -143,7 +145,9 @@ def get_user(username):
     c.execute("SELECT * FROM users WHERE username = ?", (username,))
     row = c.fetchone()
     conn.close()
-    return {'id': row[0], 'username': row[1], 'password': row[2], 'role': row[3], 'fullname': row[4], 'department': row[5]} if row else None
+    if row:
+        return {'id': row[0], 'username': row[1], 'password': row[2], 'role': row[3], 'fullname': row[4], 'department': row[5]}
+    return None
 
 def add_user(username, password, role='user', fullname='', department=''):
     conn = sqlite3.connect(DB_PATH)
@@ -184,7 +188,13 @@ def get_ticket_stats():
     c.execute("SELECT status, COUNT(*) FROM requests GROUP BY status")
     stats = dict(c.fetchall())
     conn.close()
-    return {'Pending': stats.get('Pending', 0), 'In Progress': stats.get('In Progress', 0), 'Completed': stats.get('Completed', 0), 'Approved': stats.get('Approved', 0)}
+    return {
+        'Pending': stats.get('Pending', 0),
+        'In Progress': stats.get('In Progress', 0),
+        'Completed': stats.get('Completed', 0),
+        'Approved': stats.get('Approved', 0),
+        'Rejected': stats.get('Rejected', 0)
+    }
 
 def get_inventory_count():
     conn = sqlite3.connect(DB_PATH)
