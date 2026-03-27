@@ -4,189 +4,110 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IT Service Portal</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        :root {
-            --primary: #0078d4;
-            --secondary: #2b5797;
-            --success: #28a745;
-            --danger: #dc3545;
-            --light: #f4f7fa;
-            --dark: #333;
-        }
-
-        body {
-            background-color: var(--light);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1100px;
-            margin: 30px auto;
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            min-height: 85vh;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid var(--primary);
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-
-        .user-box {
-            background: #f8f9fa;
-            padding: 10px 20px;
-            border-radius: 8px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .service-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 25px;
-            display: flex;
-            justify-content: space-between;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        .business-view {
-            background: #f0f7ff;
-            padding: 15px;
-            border-left: 5px solid var(--primary);
-            border-radius: 4px;
-            margin: 15px 0;
-        }
-
-        .btn-request {
-            background-color: var(--success);
-            color: white;
-            padding: 12px 25px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .categories ul {
-            list-style: none;
-            padding: 0;
-            display: flex;
-            gap: 15px;
-        }
-
-        .categories a {
-            text-decoration: none;
-            padding: 8px 18px;
-            border: 1px solid var(--primary);
-            border-radius: 20px;
-            color: var(--primary);
-            font-weight: bold;
-        }
-
-        .tech-details {
-            font-size: 0.9rem;
-            color: #555;
-            margin-top: 15px;
-        }
-
-        footer {
-            margin-top: 50px;
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            color: #999;
-            font-size: 0.85rem;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.7">
 </head>
 <body>
     <div class="container">
-        <header class="header">
+        <header class="header-main">
             <div>
-                <h1 style="margin: 0; color: var(--primary);">✨ Mein IT-Service-Portal</h1>
-                <p style="margin: 5px 0 0 0; color: #666;">Ihr persönlicher Zugang zu allen IT-Services</p>
+                <h1>✨ Mein IT-Service-Portal</h1>
+                <p class="header-sub">Ihr persönlicher Zugang zu allen IT-Services – schnell, transparent, zuverlässig</p>
             </div>
-            {% if current_user.is_authenticated %}
-            <div class="user-box">
-                <p style="margin: 0;">👤 <strong>{{ current_user.fullname }}</strong></p>
-                <p style="margin: 0; font-size: 0.8rem; color: #666;">🏢 {{ current_user.department }}</p>
+            <div class="user-info-bar">
+                <p>👤 <strong>Angemeldet als:</strong> {{ current_user.fullname }}</p>
+                <p>🏢 <strong>Abteilung:</strong> {{ current_user.department }}</p>
             </div>
-            {% endif %}
         </header>
 
         <main>
-            {% block content %}
-            <div style="margin-bottom: 40px;">
-                <h2 style="color: var(--dark);">🌟 Willkommen, {{ current_user.fullname }}!</h2>
-                <p style="font-size: 1.2rem; font-weight: 500;">Wie kann ich Ihnen heute helfen?</p>
+            <h2 class="welcome-title">🌟 Willkommen im Service-Portal, {{ current_user.fullname }}!</h2>
+            <p class="welcome-sub">Wie kann ich Ihnen heute helfen?</p>
+
+            <div class="cat-container">
+                <p class="cat-label">KATEGORIEN</p>
+                <div class="cat-list">
+                    <a href="{{ url_for('index', category='Hardware') }}" class="cat-btn">Hardware</a>
+                    <a href="{{ url_for('index', category='Software') }}" class="cat-btn">Software</a>
+                    <a href="{{ url_for('index', category='Zugang & Berechtigungen') }}" class="cat-btn">Zugang & Berechtigungen</a>
+                    <a href="{{ url_for('index', category='Support') }}" class="cat-btn">Support</a>
+                    <a href="{{ url_for('index', category='Alle') }}" class="cat-btn">Alle</a>
+                </div>
             </div>
 
-            <nav class="categories" style="margin-bottom: 30px;">
-                <h3 style="font-size: 1rem; color: #888; text-transform: uppercase;">Kategorien</h3>
-                <ul>
-                    <li><a href="{{ url_for('index', category='Hardware') }}">Hardware</a></li>
-                    <li><a href="{{ url_for('index', category='Software') }}">Software</a></li>
-                    <li><a href="{{ url_for('index', category='Support') }}">Support</a></li>
-                    <li><a href="{{ url_for('index') }}" style="background: var(--primary); color: white;">Alle</a></li>
-                </ul>
-            </nav>
-
-            <div class="services-list">
-                {% for service in services %}
-                <div class="service-card">
-                    <div style="flex: 1;">
-                        <h2 style="color: var(--secondary); margin: 0;">{{ service.name }}</h2>
-                        <p style="color: #999; font-size: 0.8rem; margin: 5px 0;">Ref-ID: {{ service.id }} | Verfügbarkeit: {{ service.availability }}</p>
-                        
-                        <div class="business-view">
-                            <strong>📋 Business-Beschreibung:</strong> {{ service.description_business }}
+            <div class="services-wrapper">
+                {% if services %}
+                    {% for service in services %}
+                    <div class="service-card">
+                        <div class="card-header">
+                            <div>
+                                <h3>{{ service.name }}</h3>
+                                <p class="ref-text">Ref-ID: {{ service.id }} | Verfügbarkeit: {{ service.availability }}</p>
+                            </div>
+                            <a href="{{ url_for('show_request_form', service_id=service.id) }}" class="btn-green">📦 Jetzt anfordern</a>
                         </div>
-                        
-                        <div class="tech-details">
-                            <span>🔍 Technical Details</span>
-                            <div style="margin-top: 10px; display: flex; gap: 25px;">
-                                <span style="color: var(--success); font-weight: bold;">⏱ SLA: {{ service.sla }}</span>
-                                <span style="color: var(--danger); font-weight: bold;">💰 Kosten: {{ service.costs }}</span>
+
+                        <div class="business-desc-box">
+                            <span>📋</span> <strong>Business-Beschreibung:</strong> {{ service.description_business }}
+                        </div>
+
+                        <div class="tech-section">
+                            <p class="tech-trigger" onclick="toggleTech('details-{{ loop.index }}')">🔍 Technische Details</p>
+                            
+                            <div class="sla-cost-row">
+                                <span class="sla-badge">⏱ SLA: {{ service.sla }}</span>
+                                <span class="cost-badge">💰 Kosten: {{ service.costs }}</span>
+                            </div>
+
+                            <div id="details-{{ loop.index }}" class="tech-details-content" style="display: none; margin-top:10px;">
+                                <p><strong>Technische Spezifikationen:</strong> {{ service.description_technical }}</p>
                             </div>
                         </div>
                     </div>
-                    
-                    <div style="display: flex; align-items: center; margin-left: 30px;">
-                        <a href="{{ url_for('show_request_form', service_id=service.id) }}" class="btn-request">
-                            📦 Jetzt anfordern
-                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align:center; padding: 50px; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <p style="color: #888; font-size: 1.1rem;">Keine Services in Kategorie gefunden.</p>
+                        <a href="{{ url_for('index') }}" style="color: #0078d4; text-decoration: none; font-weight: bold;">Alle Services anzeigen →</a>
                     </div>
-                </div>
-                {% endfor %}
+                {% endif %}
             </div>
-            {% endblock %}
+
+            <div class="footer-grid">
+                <div class="info-box">
+                    <h4><a href="{{ url_for('requests_list') }}">📋 Meine Anfragen</a></h4>
+                    <p>Hier können Sie den Status Ihrer bestellten Services einsehen.</p>
+                </div>
+                
+                {% if current_user.role == 'admin' %}
+                <div class="info-box" style="border-left: 5px solid #0078d4; background: #f0f7ff;">
+                    <h4><a href="{{ url_for('admin_cmdb') }}">🖥️ IT-Administration (CMDB)</a></h4>
+                    <p>Interne Übersicht Inventarverwaltung für Administratoren.</p>
+                </div>
+                {% endif %}
+            </div>
         </main>
 
-        <footer>
-            <div style="margin-bottom: 15px;">
-                {% if current_user.role == 'admin' %}
-                    <a href="{{ url_for('admin_panel') }}" style="margin: 0 10px; color: var(--primary); text-decoration: none;">🛠 Admin-Panel</a> |
-                    <a href="{{ url_for('admin_cmdb') }}" style="margin: 0 10px; color: var(--primary); text-decoration: none;">🖥️ IT-Administration (CMDB)</a> |
-                {% endif %}
-                <a href="{{ url_for('requests_list') }}" style="margin: 0 10px; color: var(--primary); text-decoration: none;">📋 Meine Anfragen</a> |
-                <a href="{{ url_for('logout') }}" style="margin: 0 10px; color: var(--danger); text-decoration: none;">🚪 Abmelden</a>
-            </div>
-            <p>© 2026 IT Service Portal – Transparente IT-Leistungen</p>
+        <footer class="bottom-nav">
+            {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_panel') }}" style="color: #d83b01; font-weight: bold;">🛠 Admin-Dashboard</a> |
+                <a href="{{ url_for('add_service_form') }}">➕ Service hinzufügen</a> |
+                <a href="{{ url_for('admin_cmdb') }}">🖥️ CMDB Inventar</a> |
+            {% endif %}
+            
+            <a href="{{ url_for('requests_list') }}">📋 Meine Anfragen</a> |
+            <a href="{{ url_for('logout') }}" class="logout-link" style="color: #a4262c;">🚪 Abmelden</a>
         </footer>
     </div>
+
+    <script>
+    function toggleTech(id) {
+        var x = document.getElementById(id);
+        if (x.style.display === "none" || x.style.display === "") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+    </script>
 </body>
 </html>

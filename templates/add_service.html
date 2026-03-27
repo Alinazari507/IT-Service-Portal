@@ -1,32 +1,215 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>Neuen Service hinzufügen</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuen Service anlegen | IT Service Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Modern UI styling specific for this form - BOLD and WIDE edition */
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding-top: 50px;
+        }
+
+        .admin-form-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 650px; 
+            border: 1px solid #eee;
+        }
+
+        .form-header {
+            border-bottom: 2px solid #0078d4;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        .form-header h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .form-header p {
+            color: #7f8c8d;
+            margin: 5px 0 0 0;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px; /* Increased space between groups */
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px; /* More space between label and input */
+            color: #333;
+            font-weight: 700; /* Bolder label text */
+            font-size: 1rem; /* Slightly larger label */
+        }
+
+        .form-group label span.optional {
+            color: #888;
+            font-weight: normal;
+            font-size: 0.85rem;
+            margin-left: 5px;
+        }
+
+        /* Here are the BOLD and WIDE input styles */
+        .form-control {
+            width: 100%;
+            padding: 16px; /* Significantly increased padding (top/bottom and left/right) for "wide" effect */
+            border: 2px solid #bbb; /* Thicker and darker border for "bold" effect */
+            border-radius: 8px;
+            box-sizing: border-box; 
+            font-size: 1.1rem; /* Slightly larger text inside the input */
+            color: #333;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: #0078d4; /* Keep the same blue focus color */
+            box-shadow: 0 0 0 4px rgba(0, 120, 212, 0.15); /* More pronounced shadow */
+            outline: none;
+        }
+
+        /* Placeholders - make them clearer */
+        .form-control::placeholder {
+            color: #aaa;
+            font-weight: normal;
+        }
+
+        textarea.form-control {
+            resize: vertical; 
+            min-height: 150px; /* Increased minimum height for textareas */
+            line-height: 1.6; /* Better line spacing in textareas */
+        }
+
+        .btn-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding-top: 25px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-save {
+            background: #28a745; 
+            color: white;
+            padding: 14px 35px; /* Bigger padding for a bigger button */
+            border: none;
+            border-radius: 8px; /* Matching input border radius */
+            font-size: 1.1rem; /* Bigger font for save button */
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-save:hover {
+            background: #218838;
+        }
+
+        .btn-back {
+            text-decoration: none;
+            color: #0078d4;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 1rem;
+        }
+
+        .btn-back:hover {
+            text-decoration: underline;
+        }
+        
+        .alert {
+            background: #e3f2fd;
+            color: #0d47a1;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 6px solid #2196f3;
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Neuen Service anlegen</h2>
-        <form method="post">
-            <label>ID (z.B. HW-009-011):</label><br>
-            <input type="text" name="id" required><br>
-            <label>Name:</label><br>
-            <input type="text" name="name" required><br>
-            <label>Kategorie (Hardware, Software, Zugang, Support):</label><br>
-            <input type="text" name="category" required><br>
-            <label>Verfügbarkeit:</label><br>
-            <input type="text" name="availability" required><br>
-            <label>Business-Beschreibung:</label><br>
-            <textarea name="description_business" rows="3" cols="50"></textarea><br>
-            <label>Technische Beschreibung:</label><br>
-            <textarea name="description_technical" rows="3" cols="50"></textarea><br>
-            <label>SLA:</label><br>
-            <input type="text" name="sla"><br>
-            <label>Kosten (optional):</label><br>
-            <input type="text" name="costs"><br>
-            <button type="submit">Speichern</button>
+    <div class="admin-form-container">
+        <header class="form-header">
+            <h1>➕ Neuen IT-Service anlegen</h1>
+            <p>Fügen Sie einen neuen Service zum Katalog hinzu.</p>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert">ℹ️ {{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('add_service_form') }}" method="post">
+            <div class="form-group">
+                <label for="id">ID (z.B. HW-009-011)</label>
+                <input type="text" id="id" name="id" class="form-control" required placeholder="Service ID eintragen">
+            </div>
+
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" class="form-control" required placeholder="z.B. Standard Laptop">
+            </div>
+
+            <div class="form-group">
+                <label for="category">Kategorie (Hardware, Software, Zugang, Support)</label>
+                <input type="text" id="category" name="category" class="form-control" required placeholder="Genaue Kategorie">
+            </div>
+
+            <div class="form-group">
+                <label for="availability">Verfügbarkeit</label>
+                <input type="text" id="availability" name="availability" class="form-control" placeholder="z.B. Sofort, 2 Werktage">
+            </div>
+
+            <div class="form-group">
+                <label for="description_business">Business-Beschreibung</label>
+                <textarea id="description_business" name="description_business" class="form-control" required placeholder="📋 Kurze Business-Beschreibung"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="description_technical">Technische Beschreibung</label>
+                <textarea id="description_technical" name="description_technical" class="form-control" placeholder="🔍 Technische Details (Spezifikationen)"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="sla">SLA (z.B. 3 Werktage)</label>
+                <input type="text" id="sla" name="sla" class="form-control" placeholder="SLA eintragen">
+            </div>
+
+            <div class="form-group">
+                <label for="costs">Kosten <span class="optional">(optional)</span></label>
+                <input type="text" id="costs" name="costs" class="form-control" placeholder="💰 z.B. 0€, 15€/Monat">
+            </div>
+
+            <div class="btn-row">
+                <a href="{{ url_for('index') }}" class="btn-back">← Zurück zum Katalog</a>
+                <button type="submit" class="btn-save">
+                    📦 Service speichern
+                </button>
+            </div>
         </form>
-        <a href="{{ url_for('index') }}">Zurück</a>
+        <p style="text-align: center; font-size: 0.8rem; color: #aaa; margin-top: 30px;">© 2026 IT Service Portal – Administrative View</p>
     </div>
 </body>
 </html>

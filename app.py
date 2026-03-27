@@ -33,10 +33,6 @@ def load_user(user_id):
 
 database.init_db()
 
-@app.route('/health')
-def health_check():
-    return "OK", 200
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -75,15 +71,15 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    category = request.args.get('category')
+    category = request.args.get('category', 'Alle') 
     services = database.get_services(category)
-    return render_template('index.html', user=current_user, services=services)
+    return render_template('index.html', services=services)
 
 @app.route('/request/<service_id>')
 @login_required
 def show_request_form(service_id):
     service = database.get_service(service_id)
-    return render_template('service_request.html', service=service, user=current_user)
+    return render_template('service_request.html', service=service)
 
 @app.route('/request', methods=['POST'])
 @login_required
@@ -100,6 +96,8 @@ def requests_list():
     reqs = database.get_requests(user_name=current_user.fullname)
     return render_template('requests.html', requests=reqs)
 
+# --- Admin Section ---
+
 @app.route('/admin')
 @login_required
 def admin_panel():
@@ -111,7 +109,57 @@ def admin_panel():
         requests_all = database.get_all_requests()
         return render_template('admin.html', requests=requests_all, stats=stats, inv_count=inv_count)
     except Exception as e:
-        return f"Error: {str(e)}", 500
+        print(f"Admin Panel Error: {e}")
+        return redirect(url_for('index'))
+
+@app.route('/admin/cmdb', methods=['GET', 'POST'])
+@login_required
+def admin_cmdb():
+    if current_user.role != 'admin':
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        inventory_data = {
+            'asset_tag': request.form.get('asset_tag'),
+            'geraetetyp': request.form.get('geraetetyp'),
+            'hersteller_modell': request.form.get('hersteller_modell'),
+            'seriennummer': request.form.get('seriennummer'),
+            'kaufdatum': request.form.get('kaufdatum', ''),
+            'status': request.form.get('status', 'Im Lager'),
+            'nutzer_standort': request.form.get('nutzer_standort', ''),
+            'garantie_bis': request.form.get('garantie_bis', ''),
+            'lizenz_bis': request.form.get('lizenz_bis', '')
+        }
+        success = database.add_inventory_item(inventory_data)
+        if success:
+            flash('Asset erfolgreich registriert.')
+        else:
+            flash('Fehler: Asset-Tag oder Seriennummer existiert bereits.')
+        return redirect(url_for('admin_cmdb'))
+    
+    items = database.get_inventory()
+    return render_template('cmdb.html', items=items)
+
+@app.route('/admin/add_service', methods=['GET', 'POST'])
+@login_required
+def add_service_form():
+    if current_user.role != 'admin':
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        service_data = {
+            'id': request.form['id'], 
+            'name': request.form['name'], 
+            'category': request.form['category'],
+            'availability': request.form['availability'], 
+            'description_business': request.form['description_business'],
+            'description_technical': request.form['description_technical'], 
+            'sla': request.form['sla'], 
+            'costs': request.form['costs']
+        }
+        database.add_service(service_data)
+        flash('Service erfolgreich hinzugefügt.')
+        return redirect(url_for('index'))
+    return render_template('add_service.html')
 
 @app.route('/admin/update/<int:request_id>', methods=['POST'])
 @login_required
@@ -123,56 +171,14 @@ def admin_update_request(request_id):
         flash('Status aktualisiert.')
     return redirect(url_for('admin_panel'))
 
-@app.route('/admin/cmdb', methods=['GET', 'POST'])
-@login_required
-def admin_cmdb():
-    if current_user.role != 'admin':
-        return redirect(url_for('index'))
-    if request.method == 'POST':
-        inventory_data = {
-            'asset_tag': request.form['asset_tag'],
-            'geraetetyp': request.form['geraetetyp'],
-            'hersteller_modell': request.form['hersteller_modell'],
-            'seriennummer': request.form['seriennummer'],
-            'kaufdatum': request.form['kaufdatum'],
-            'status': request.form['status'],
-            'nutzer_standort': request.form['nutzer_standort'],
-            'garantie_bis': request.form['garantie_bis'],
-            'lizenz_bis': request.form['lizenz_bis']
-        }
-        success = database.add_inventory_item(inventory_data)
-        if success:
-            flash('Inventar erfolgreich aktualisiert.')
-        else:
-            flash('Fehler: Asset-Tag bereits vorhanden.')
-        return redirect(url_for('admin_cmdb'))
-    items = database.get_inventory()
-    return render_template('cmdb.html', items=items)
-
-@app.route('/admin/add_service', methods=['GET', 'POST'])
-@login_required
-def add_service_form(): # Dieser Name muss mit url_for in templates übereinstimmen
-    if current_user.role != 'admin':
-        return redirect(url_for('index'))
-    if request.method == 'POST':
-        service_data = {
-            'id': request.form['id'], 'name': request.form['name'], 'category': request.form['category'],
-            'availability': request.form['availability'], 'description_business': request.form['description_business'],
-            'description_technical': request.form['description_technical'], 'sla': request.form['sla'], 'costs': request.form['costs']
-        }
-        database.add_service(service_data)
-        flash('Service hinzugefügt.')
-        return redirect(url_for('index'))
-    return render_template('add_service.html')
-
 @app.route('/admin/export/tickets')
 @login_required
 def export_tickets_excel():
     if current_user.role != 'admin':
-        return "Zugriff verweigert", 403
+        return redirect(url_for('index'))
     tickets = database.get_all_requests()
     if not tickets:
-        flash("Keine Daten vorhanden.")
+        flash("Keine Daten zum Exportieren vorhanden.")
         return redirect(url_for('admin_panel'))
     try:
         df = pd.DataFrame(tickets)
