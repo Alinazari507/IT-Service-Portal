@@ -93,10 +93,11 @@ def request_service():
 @app.route('/requests')
 @login_required
 def requests_list():
-    reqs = database.get_requests(user_name=current_user.fullname)
+    if current_user.role == 'admin':
+        reqs = database.get_all_requests()
+    else:
+        reqs = database.get_requests(user_name=current_user.fullname)
     return render_template('requests.html', requests=reqs)
-
-# --- Admin Section ---
 
 @app.route('/admin')
 @login_required

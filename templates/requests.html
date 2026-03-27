@@ -5,17 +5,21 @@
     <title>Meine Anfragen | IT Portal</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        /* Status-Badges für bessere Übersicht */
         .status-badge {
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.85em;
             font-weight: bold;
             display: inline-block;
+            text-transform: uppercase;
         }
-        .status-pending { background-color: #ffc107; color: #856404; } /* Gelb für Warten */
-        .status-approved { background-color: #28a745; color: white; }  /* Grün für Genehmigt */
-        .status-rejected { background-color: #dc3545; color: white; }  /* Rot für Abgelehnt */
+        .status-pending { background-color: #ffc107; color: #856404; }
+        .status-checking { background-color: #6f42c1; color: white; }
+        .status-progress { background-color: #17a2b8; color: white; }
+        .status-order { background-color: #fd7e14; color: white; }
+        .status-approved { background-color: #28a745; color: white; }
+        .status-completed { background-color: #28a745; color: white; }
+        .status-rejected { background-color: #dc3545; color: white; }
         
         .request-table {
             width: 100%;
@@ -35,16 +39,24 @@
         
         .request-table th {
             background-color: #f8f9fa;
-            color: var(--primary);
+            color: #0078d4;
             font-weight: bold;
         }
+
+        .admin-row { background-color: #fff9f0; }
     </style>
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <h1>📋 Meine Service-Anfragen</h1>
-            <small>Hier sehen Sie den aktuellen Status Ihrer bisherigen Bestellungen</small>
+        <header class="header" style="text-align: center; margin-bottom: 30px;">
+            <h1>📋 Service-Anfragen Übersicht</h1>
+            <p style="color: #666;">
+                {% if current_user.role == 'admin' %}
+                Vollständige Liste aller eingegangenen Tickets (Admin-Ansicht)
+                {% else %}
+                Hier sehen Sie den aktuellen Status Ihrer bisherigen Bestellungen
+                {% endif %}
+            </p>
         </header>
 
         <div class="column">
@@ -52,19 +64,30 @@
                 <thead>
                     <tr>
                         <th>Service-ID</th>
+                        {% if current_user.role == 'admin' %}
+                        <th>Mitarbeiter</th>
+                        <th>Abteilung</th>
+                        {% endif %}
                         <th>Grund / Beschreibung</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for req in requests %}
-                    <tr>
+                    <tr {% if current_user.role == 'admin' %}class="admin-row"{% endif %}>
                         <td><strong>{{ req.service_id }}</strong></td>
+                        {% if current_user.role == 'admin' %}
+                        <td>{{ req.user_name }}</td>
+                        <td>{{ req.user_dept }}</td>
+                        {% endif %}
                         <td>{{ req.reason if req.reason else 'Keine Angabe' }}</td>
                         <td>
                             <span class="status-badge 
                                 {% if req.status == 'Pending' %}status-pending
-                                {% elif req.status == 'Approved' %}status-approved
+                                {% elif req.status == 'Checking Inventory' %}status-checking
+                                {% elif req.status == 'In Progress' %}status-progress
+                                {% elif req.status == 'To be Ordered' %}status-order
+                                {% elif req.status == 'Approved' or req.status == 'Completed' %}status-approved
                                 {% else %}status-rejected{% endif %}">
                                 {{ req.status }}
                             </span>
@@ -72,8 +95,8 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="3" style="text-align: center; padding: 40px; color: #999;">
-                            Sie haben bisher noch keine Services angefordert.
+                        <td colspan="{% if current_user.role == 'admin' %}5{% else %}3{% endif %}" style="text-align: center; padding: 40px; color: #999;">
+                            Momentan liegen keine Anfragen vor.
                         </td>
                     </tr>
                     {% endfor %}
@@ -82,13 +105,18 @@
         </div>
 
         <div style="margin-top: 30px; text-align: center;">
-            <a href="{{ url_for('index') }}" class="btn" style="text-decoration: none; background-color: var(--primary); color: white;">
-                ← Zurück zum Katalog
+            <a href="{{ url_for('index') }}" class="btn" style="text-decoration: none; padding: 10px 20px; background-color: #0078d4; color: white; border-radius: 5px; display: inline-block;">
+                ← Zurück zum Hauptportal
             </a>
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_panel') }}" class="btn" style="text-decoration: none; padding: 10px 20px; background-color: #333; color: white; border-radius: 5px; display: inline-block; margin-left: 10px;">
+                🛠 Admin-Panel
+            </a>
+            {% endif %}
         </div>
 
         <footer style="margin-top: 50px; text-align: center; font-size: 0.8em; color: #777;">
-            &copy; 2026 IT Service Portal – Transparente IT-Leistungen
+            &copy; 2026 IT Service Portal – Administrator & User View
         </footer>
     </div>
 </body>
